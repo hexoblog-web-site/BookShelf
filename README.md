@@ -45,6 +45,8 @@ index_generator:
 hexo clean && hexo generate && hexo server
 ```
 
+另有四个页面不写正文，内容全在站点的 `source/_data/` 下：`about.yml`（关于）、`link.yml`（友情链接）、`recommend.yml`（推荐）、`equipment.yml`（装备）。主题自带空占位但**不带这四个文件**，需要自己新建，字段说明见各文件开头注释与 [使用说明·第六节](docs/guide.md#六四个数据驱动的页面)。
+
 ## 二、页面模板映射（WordPress → Hexo）
 
 | WordPress 文件 | Hexo EJS | 说明 |

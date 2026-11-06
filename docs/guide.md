@@ -51,7 +51,7 @@ hexo clean && hexo server
 | `title` / `subtitle` / `author` | 站点名、副标题、作者，会出现在页头和 SEO 里 | `老刘博客` |
 | `url` | 站点正式地址，影响 sitemap、分享链接、og:image | `https://www.example.com` |
 | `permalink` | 文章地址格式，**建站后别随意改**，否则已收录的链接全废 | `:year/:month/:title.html` |
-| `asset_version` | 主题 js/css 的版本号，改过前端就 +1，见第七节 | `'20261106'` |
+| `asset_version` | 主题 js/css 的版本号，改过前端就 +1，见第八节 | `'20261106'` |
 | `index_generator.per_page` | 首页每页文章数 | `10` |
 
 ---
@@ -148,7 +148,89 @@ twikoo:
 
 ---
 
-## 六、目录里都是什么
+## 六、四个数据驱动的页面
+
+有四个页面不用写正文，内容全部来自站点的 `source/_data/*.yml`。改文案只动 yml，模板和主题配置都不用碰。
+
+| 页面 | 地址 | 模板 | 数据文件 |
+|---|---|---|---|
+| 关于 | `/about/` | `layout/about.ejs` | `about.yml` |
+| 友情链接 | `/links/` | `layout/links.ejs` | `link.yml` |
+| 推荐 | `/recommend/` | `layout/recommend.ejs` | `recommend.yml` |
+| 装备 | `/equipment/` | `layout/equipment.ejs` | `equipment.yml` |
+
+每个页面对应站点里一个只有路由的 Markdown，例如 `source/about/index.md`：
+
+```yaml
+---
+title: 关于           # 仅作兜底，实际标题读 about.yml
+layout: about
+permalink: /about/
+---
+```
+
+**数据文件必须放在站点的 `source/_data/` 下**（不是主题目录里）。主题本身不带这四个文件——`git clone` 下来后自己新建，或者从别处复制一份改。文件不存在时页面不报错，只是对应区块或整页显示空占位。
+
+字段说明写在每个 yml 文件的开头（几十行注释），照着现有条目复制一条最快。最小可用骨架：
+
+**`about.yml`** —— 十一段都可以整段删，删了对应区块就不显示；文章数、分类数、标签数、运行天数、里程碑点亮都是自动算的。
+
+```yaml
+title: 关于我
+subtitle: 一句话副标题
+profile:
+  avatar: /images/avatar.jpg
+  name: 站长
+  desc: 一段自我介绍
+story:
+  title: 关于我
+  paragraphs:
+    - 第一段正文
+ten_years:
+  start: "2025-01-01"   # 十年之约的起算日，影响天数和进度
+  years: 10
+```
+
+**`link.yml`** —— 沿用 Butterfly 的友链格式，一组一段，`link_list` 里逐条加。
+
+```yaml
+- class_name: 朋友们
+  flink_style: flexcard
+  link_list:
+    - name: Hexo
+      link: https://hexo.io/
+      avatar: /images/avatar.jpg   # 不写就用默认图
+      descr: 快速、简单且强大的博客框架
+```
+
+**`recommend.yml`** —— 推荐页主打「自动取文」，不用手写文章列表。
+
+```yaml
+- class_name: 本站精选
+  auto: true
+  mode: latest     # featured 取 featured: true 的文章 / category 按分类取
+  limit: 4
+```
+
+**`equipment.yml`** —— 商品清单，每组 `good_things → equipment_list` 下逐条写。
+
+```yaml
+- class_name: 桌面数码
+  description: 桌面上用得着的东西
+  good_things:
+    - equipment_list:
+        - name: 某件商品
+          platform: other      # tb / jd / pdd / other
+          reason: 一句话推荐理由
+          price: "99"
+          link: https://example.com/item
+```
+
+三个页面（links / recommend / equipment）在数据全空时都会显示一行提示，告诉你去哪个文件里填。
+
+---
+
+## 七、目录里都是什么
 
 ```
 layout/      EJS 模板，一个页面一个文件，_partial/ 是公共片段
@@ -162,7 +244,7 @@ _config.yml  主题配置（WordPress 后台选项的 1:1 对应）
 
 ---
 
-## 七、发布前检查
+## 八、发布前检查
 
 **改过主题的 js 或 css，必须把 `asset_version` 加一。** 浏览器对 `style.css`、`index.js` 有 12 小时强缓存，文件名不变就永远拿旧文件，改了也看不到效果。
 
@@ -175,7 +257,7 @@ asset_version: '20261106'   # 每次改前端资源就换个值，随便什么�
 
 ---
 
-## 八、常见问题
+## 九、常见问题
 
 | 现象 | 原因 | 怎么办 |
 |---|---|---|
@@ -189,7 +271,7 @@ asset_version: '20261106'   # 每次改前端资源就换个值，随便什么�
 
 ---
 
-## 九、更新主题
+## 十、更新主题
 
 ```bash
 cd themes/bookshelf
