@@ -51,6 +51,7 @@ description: ""                     # 描述 Description（已废弃 → seo.des
 home_layout:
   enabled:
     - slider                        # Sliders 幻灯片
+    - guide                         # 精选导读（guide_box）
     - notices                       # Notices 通知公告
     - hot                           # Hot topics 热门文章
     - last                          # Latest 最新文章
@@ -98,6 +99,34 @@ notice_items:                       # 通知列表（group 控件）
     link: "/#2"
   - title: "通知公告 3"
     link: "/#3"
+
+# ------------------------------------------------------------
+# 首页设置 - 精选导读  Featured guide
+# 版式：三列图文索引（分类胶囊 / 日期 / 单行标题 / 两行摘要），
+# 首页板块顺序见文件末尾 sections.guide（顺序即显示位置）。
+#
+# 数据源（按优先级）：
+#   1. 站点数据文件 source/_data/guide.yml —— 人工精选，推荐
+#      每条只写 post: 文章 slug，标题/日期/分类/摘要/链接自动取；
+#      也可以写 title / desc / link / category 完全手填，不依赖文章。
+#   2. 没有数据文件时：按 category 过滤、按发布日期倒序自动取 count 条；
+#   3. 一条都取不到 → 整块不输出（不会留空白，也不会报错）。
+# ------------------------------------------------------------
+guide_box:
+  enable: true                      # 总开关
+  title: "精选导读"                 # 板块标题
+  icon: ""                          # 标题图标（Font Awesome 类名，如 fa-solid fa-book-open）；留空不显示
+  count: 6                          # 条数；建议 3 或 6（三列刚好整行）
+  category: []                      # 自动模式的分类过滤（分类名数组，空 = 全部分类）
+  show_date: true                   # 显示日期
+  show_desc: true                   # 显示摘要（两行截断；关闭后卡片只留标题）
+  colors:                           # 分类胶囊配色，按条目顺序循环取色
+    - "#1F2EFF"
+    - "#7A5000"
+    - "#8218C3"
+    - "#AE0946"
+    - "#106165"
+    - "#02642E"
 
 # ------------------------------------------------------------
 # 首页设置 - 热门文章  Hot topics
@@ -770,6 +799,9 @@ sections:
 
   # ---------------- 首页板块（顺序即显示顺序）----------------
   slider:                            # 幻灯片 + 幻灯片右侧两个推荐位
+    show: true
+    paged_hide: true
+  guide:                             # 精选导读（三列图文索引），开关见 guide_box
     show: true
     paged_hide: true
   notices:                           # 顶部公告栏（铃铛 + 滚动公告）

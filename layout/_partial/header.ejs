@@ -46,6 +46,10 @@ var current_url = config.url + (path || '');
     <link rel="stylesheet" type="text/css" href="<%- url_for('/lib/swiper/swiper-bundle.min.css') %>">
     <% /* 新增功能样式（板块标题图标间距），置于原主题样式之后 */ %>
     <link rel="stylesheet" type="text/css" href="<%- url_for('/style/bookshelf-extra.css') %>">
+    <% /* 首页精选导读：三列网格，仅首页用，跟随 asset_version 破缓存 */ %>
+    <% if (is_home() && vt_bool('guide_box.enable', true)) { %>
+    <link rel="stylesheet" type="text/css" href="<%- url_for('/style/guide-box.css') %>?v=<%= config.asset_version || '1' %>">
+    <% } %>
     <% /* 标签样式：侧栏文章标签（每页都有），与 tags-list.css 分开维护 */ %>
     <link rel="stylesheet" type="text/css" href="<%- url_for('/style/tags-widget.css') %>">
     <% /* /tags/ 标签列表页（全量枚举 + 随机字号配色），只有该页用得上，按需加载 */ %>

@@ -12,7 +12,7 @@
 /* 首页板块：顺序、开关全部取自 _config.yml 的「板块统一配置」sections
  * （书写顺序 = 显示顺序；show 为总开关；paged_hide 控制翻页后是否保留）。
  * 兼容旧写法：没有 sections 时回落到 WP 原生 home_layout.enabled + home_paged_exclude。 */
-var template_whitelist = ['hot', 'last', 'links', 'notices', 'slider'];
+var template_whitelist = ['hot', 'last', 'links', 'notices', 'slider', 'guide'];
 
 var current_page = parseInt(page.current || page.page || 1, 10);
 if (isNaN(current_page) || current_page < 1) {
@@ -96,6 +96,8 @@ vt_order.forEach(function (k) {
         %><%- partial('_partial/home/hot') %><%
     } else if (k === 'last') {
         %><%- partial('_partial/home/last') %><%
+    } else if (k === 'guide') {
+        %><%- partial('_partial/home/guide') %><%
     } else if (k === 'links') {
         %><%- partial('_partial/home/links') %><%
     }

@@ -1,0 +1,183 @@
+<%
+/**
+ * guide.ejs —— 首页「精选导读」板块（栏目式图文索引）
+ *
+ * 版式参考 itlaoli.com 的 guide-box：三列网格，每格「分类胶囊 + 日期 / 单行标题 / 两行摘要」，
+ * 格与格之间用右边框、下边框分隔，最后一行与最后一列不吃边框。
+ * 视觉细节按 BookShelf 的变量重写（--vt-bg-color-card / --vt-border-color …），
+ * 所以深色模式会自动跟随，不需要单独维护一套夜间样式。
+ *
+ * 数据源（按优先级）：
+ *   1. 站点数据文件 source/_data/guide.yml —— 人工精选，每条写 post: 文章 slug 即可，
+ *      也可以直接写 title / desc / link / category，完全脱离文章手填；
+ *   2. 没有数据文件时，按 guide_box.category 过滤、按发布日期倒序自动取 count 条；
+ *   3. 一条都取不到 → 整块不输出（不留空白、不报错）。
+ *
+ * 开关：_config.yml 的 guide_box.enable，以及 sections.guide.show / paged_hide。
+ */
+var cfg = vt_get_config('guide_box', {}) || {};
+
+if (!vt_bool('guide_box.enable', true)) { return; }
+
+var count = parseInt(cfg.count, 10);
+if (isNaN(count) || count < 1) count = 6;
+
+var show_date = cfg.show_date !== false;
+var show_desc = cfg.show_desc !== false;
+
+/* 分类胶囊配色：按条目顺序循环取色。默认沿用原站那组（蓝/棕/紫/玫红/墨绿/深绿），
+   站长想统一成主题色，把 colors 改成 ["#f45d1d"] 之类的单元素数组即可。 */
+var DEFAULT_COLORS = ['#1F2EFF', '#7A5000', '#8218C3', '#AE0946', '#106165', '#02642E'];
+var colors = (Array.isArray(cfg.colors) && cfg.colors.length) ? cfg.colors : DEFAULT_COLORS;
+
+/* 分类过滤：字符串或数组都吃，支持写成单个分类名 */
+var cat_filter = cfg.category;
+if (typeof cat_filter === 'string') {
+    cat_filter = cat_filter.trim() ? [cat_filter.trim()] : [];
+} else if (!Array.isArray(cat_filter)) {
+    cat_filter = [];
+}
+
+var all_posts = site.posts.toArray();
+
+function postCats(p) {
+    return (p.categories && typeof p.categories.toArray === 'function')
+        ? p.categories.toArray()
+        : [];
+}
+
+function findPost(slug) {
+    slug = String(slug || '').trim();
+    if (!slug) return null;
+    var byPath = slug.replace(/^\//, '').replace(/\/$/, '');
+    var i, p;
+    /* 1) 文件名（slug） */
+    for (i = 0; i < all_posts.length; i++) {
+        p = all_posts[i];
+        if (p.slug === slug) return p;
+    }
+    /* 2) 文章路径，例如 articles/07a31fb8 */
+    for (i = 0; i < all_posts.length; i++) {
+        p = all_posts[i];
+        if (p.path && p.path.replace(/\/$/, '') === byPath) return p;
+    }
+    /* 3) 标题全等 —— 懒得查文件名时直接写标题也能用 */
+    for (i = 0; i < all_posts.length; i++) {
+        p = all_posts[i];
+        if (p.title === slug) return p;
+    }
+    return null;
+}
+
+/* 分类链接：优先用条目自带的 category_link，否则按分类名拼分类页地址
+   （中文直接拼，浏览器会自己编码；预先 encode 只是把地址变长） */
+function catLink(name) {
+    if (!name) return '';
+    return url_for((config.category_dir || 'categories') + '/' + name + '/');
+}
+
+var items = [];
+
+/* ---- 1. 站点数据文件 ---- */
+var data = (site.data && site.data.guide) ? site.data.guide : null;
+/* 兼容两种写法：顶层数组，或 { items: [...] } */
+if (data && !Array.isArray(data) && Array.isArray(data.items)) data = data.items;
+if (Array.isArray(data)) {
+    data.forEach(function (row) {
+        if (!row || typeof row !== 'object') return;
+
+        var post = row.post ? findPost(row.post) : null;
+        if (row.post && !post) return;   // 写了 post 但找不到对应文章，跳过而不是输出空条目
+
+        var cats = post ? postCats(post) : [];
+        var catName = row.category || (cats.length ? cats[0].name : '');
+
+        var title = row.title || (post ? post.title : '');
+        if (!title) return;
+
+        var link = row.link ? url_for(row.link) : (post ? url_for(post.path) : '');
+        if (!link) return;
+
+        var d = row.date || (post ? post.date : null);
+
+        var desc = row.desc;
+        if (desc === undefined || desc === null || desc === '') {
+            desc = post ? vt_get_the_excerpt(post) : '';
+        } else {
+            desc = String(desc).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+        }
+
+        items.push({
+            category: catName,
+            categoryLink: row.category_link ? url_for(row.category_link) : catLink(catName),
+            date: d,
+            title: title,
+            desc: desc,
+            link: link,
+            target: row.target || ''
+        });
+    });
+}
+
+/* ---- 2. 自动模式：按分类 + 日期倒序 ---- */
+if (!items.length) {
+    var sorted = all_posts.slice().sort(function (a, b) { return b.date - a.date; });
+    sorted.forEach(function (p) {
+        if (items.length >= count) return;
+        if (cat_filter.length) {
+            var names = postCats(p).map(function (c) { return c.name; });
+            var hit = names.some(function (n) { return cat_filter.indexOf(n) !== -1; });
+            if (!hit) return;
+        }
+        var cats = postCats(p);
+        var catName = cats.length ? cats[0].name : '';
+        items.push({
+            category: catName,
+            categoryLink: catLink(catName),
+            date: p.date,
+            title: p.title,
+            desc: vt_get_the_excerpt(p),
+            link: url_for(p.path),
+            target: ''
+        });
+    });
+}
+
+items = items.slice(0, count);
+
+/* 一条都没有：整块不输出 */
+if (!items.length) { return; }
+
+var guide_title = cfg.title || '精选导读';
+var guide_icon  = cfg.icon || '';
+%>
+
+<div class="main-container">
+    <div class="guide-widget">
+        <div class="header">
+            <div class="title"><%- vt_section_title(guide_title, guide_icon) %></div>
+        </div>
+        <div class="guide-list">
+            <% items.forEach(function (item, i) { %>
+            <article class="guide-inner" style="--guide-cate: <%= colors[i % colors.length] %>;">
+                <header class="guide-inner-info">
+                    <% if (item.category || show_date) { %>
+                    <div class="g-i-top">
+                        <% if (item.category) { %>
+                        <span class="g-i-cate"><a href="<%- esc_url(item.categoryLink || '#') %>" target="_blank" rel="noopener"><%- esc_html(item.category) %></a></span>
+                        <% } %>
+                        <% if (show_date && item.date) { %>
+                        <time class="g-i-time" datetime="<%= date(item.date, 'YYYY-MM-DD') %>"><i class="fas fa-clock" aria-hidden="true"></i><%- date(item.date, 'YYYY-MM-DD') %></time>
+                        <% } %>
+                    </div>
+                    <% } %>
+                    <h3 class="g-i-title"><a href="<%- esc_url(item.link) %>"<% if (item.target === '_blank') { %> target="_blank" rel="noopener"<% } %>><%- esc_html(item.title) %></a></h3>
+                    <% if (show_desc && item.desc) { %>
+                    <p class="g-i-desc"><%- esc_html(item.desc) %></p>
+                    <% } %>
+                </header>
+            </article>
+            <% }); %>
+        </div>
+    </div>
+</div>

@@ -2,7 +2,7 @@
 
 **一款优雅的 Hexo 文学阅读博客主题。**
 
-当前版本 **v1.8.1**（版本号与 `package.json` 的 `version` 同步，页脚亦会显示）。
+当前版本 **v1.8.2**（版本号与 `package.json` 的 `version` 同步，页脚亦会显示）。
 
 版式克制、留白充足，把注意力留给文字本身；列表给摘要、正文给节奏，适合长篇随笔、书摘笔记、民俗掌故这类要"读进去"的内容。
 
@@ -89,7 +89,7 @@ hexo clean && hexo generate && hexo server
 
 - **常规设置**：`basic_style` / `page_data_type` / `dark_mode_type` / `default_image` / `share_image` / `background_image` / `lazy_load_enabled`（`lazy_load_enabled: false` 时卡片图直接输出真实 src，不等脚本）
 - **SEO 设置**：`keywords` / `description`
-- **首页设置**：`home_layout.enabled`（数组顺序 = 显示顺序；未列出的板块按 `sections` 顺序排在后面，开关统一看 `sections.<板块>.show`）、`slider_height` / `slider_autoplay`（true=5s / false=不播 / 数字=毫秒）/ `slider_effect` / `slider_items` / `top_items`、`notice_target` / `notice_items`、`hot_title` / `hot_cat_id` / `hot_post_ids`、`posts_ids` / `posts_not_in_ids`（**分页前**过滤，页码与篇数不会错位）/ `posts_auto_load` / `posts_auto_load_limit`（真实滚动加载，页面脚本 `source/js/auto-load.js`）/ `full_width` / `list_type` / `vt_columns`、`links_switcher`（与 `sections.links.show` 并联）/ `links_title`
+- **首页设置**：`home_layout.enabled`（数组顺序 = 显示顺序；未列出的板块按 `sections` 顺序排在后面，开关统一看 `sections.<板块>.show`）、`slider_height` / `slider_autoplay`（true=5s / false=不播 / 数字=毫秒）/ `slider_effect` / `slider_items` / `top_items`、`notice_target` / `notice_items`、`hot_title` / `hot_cat_id` / `hot_post_ids`、`posts_ids` / `posts_not_in_ids`（**分页前**过滤，页码与篇数不会错位）/ `posts_auto_load` / `posts_auto_load_limit`（真实滚动加载，页面脚本 `source/js/auto-load.js`）/ `full_width` / `list_type` / `vt_columns`、`links_switcher`（与 `sections.links.show` 并联）/ `links_title`、`guide_box`（首页精选导读：`enable` / `title` / `icon` / `count` / `category` / `show_date` / `show_desc` / `colors`，数据优先取站点 `source/_data/guide.yml`，该文件缺失时按 `category` 自动取最新文章）
 - **顶部设置**：`site_logo` / `site_logo_darkness` / `sticky_header`
 - **底部设置**：`footer_bg_type` / `footer_copyright` / `footer_js` / `sns_items` / `footer_links`
 - **文章设置**：`show_copyright` / `show_copyright_text` / `highlight_is_on` / `breadcrumbs_enabled` / `qrcode_items`
