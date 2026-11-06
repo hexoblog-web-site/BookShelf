@@ -1,0 +1,1386 @@
+/**
+ * BookShelf（书架）Hexo 主题 —— 阅读增强样式
+ *
+ * 本文件为 Hexo 版新增（原 WP 主题无对应文件），
+ * 只补充「板块标题图标」与文字的间距，不覆盖 style.css 中任何原主题样式。
+ * 图标类名来自 _config.yml 的 *_icon 字段（FontAwesome）。
+ */
+
+.vt-section-icon {
+    margin-right: 6px;
+    font-size: 95%;
+    vertical-align: baseline;
+}
+/* 注意：不要对 .vt-section-icon 使用 :empty{display:none} ——
+ * FontAwesome 图标绘制在 ::before 伪元素上，<i> 元素本身恒为空，
+ * :empty 会把图标整体隐藏。图标留空时由 vt_section_title() 不输出 <i>。 */
+
+/* 侧栏文章分类列表：分类名左、文章数右（.side-menu .menu-item > a 已为 flex 布局） */
+.side-menu .category-count {
+    color: var(--vt-text-color-grey);
+    font-size: 13px;
+    flex: none;
+}
+
+/* 热门文章序号徽章配色：原 WP 主题仅给前 4 条配色
+ * （1 红 #f35 / 2 橙 #ffa41b / 3 蓝 #1a85ff / 4 绿 #4cd964），
+ * 第 5 条起回落灰色。应用户要求补足到第 10 条（一般不会超过 10 条），
+ * 每条均含 ::before 小飘带，形状与原版一致。
+ * （2026-10-29 应用户要求新增，不属于原 WP 主题样式）
+ *
+ * 序号与配色对照：
+ *  5 紫 #a855f7   6 青 #00bcd4   7 粉 #ec4899
+ *  8 靛 #6366f1   9 蓝绿 #14b8a6  10 玫红 #e11d48
+ */
+.hot-list > li:nth-child(5) .hot-order { background-color: #a855f7; color: #fff; }
+.hot-list > li:nth-child(5) .hot-order::before {
+    border: 3px solid #a855f7;
+    border-bottom: 3px solid transparent;
+    border-left: 3px solid transparent;
+}
+
+.hot-list > li:nth-child(6) .hot-order { background-color: #00bcd4; color: #fff; }
+.hot-list > li:nth-child(6) .hot-order::before {
+    border: 3px solid #00bcd4;
+    border-bottom: 3px solid transparent;
+    border-left: 3px solid transparent;
+}
+
+.hot-list > li:nth-child(7) .hot-order { background-color: #ec4899; color: #fff; }
+.hot-list > li:nth-child(7) .hot-order::before {
+    border: 3px solid #ec4899;
+    border-bottom: 3px solid transparent;
+    border-left: 3px solid transparent;
+}
+
+.hot-list > li:nth-child(8) .hot-order { background-color: #6366f1; color: #fff; }
+.hot-list > li:nth-child(8) .hot-order::before {
+    border: 3px solid #6366f1;
+    border-bottom: 3px solid transparent;
+    border-left: 3px solid transparent;
+}
+
+.hot-list > li:nth-child(9) .hot-order { background-color: #14b8a6; color: #fff; }
+.hot-list > li:nth-child(9) .hot-order::before {
+    border: 3px solid #14b8a6;
+    border-bottom: 3px solid transparent;
+    border-left: 3px solid transparent;
+}
+
+.hot-list > li:nth-child(10) .hot-order { background-color: #e11d48; color: #fff; }
+.hot-list > li:nth-child(10) .hot-order::before {
+    border: 3px solid #e11d48;
+    border-bottom: 3px solid transparent;
+    border-left: 3px solid transparent;
+}
+
+/* ============================================================
+ * 文章导语（导语块）
+ *
+ * 背景：每篇正文第一段是 front-matter description 的同一段文字
+ * （<!-- more --> 之前）。裸段落直接顶在标题下，读起来像 SEO 文案。
+ * 处理方式：给这段挂 .vt-post-lede，让它读起来像杂志的「导语 / 提要」——
+ * 浅底 + 左侧色条 + 略宽行距，不加「摘要」字样（加标签反而更刻意）。
+ *
+ * 类名由 scripts/lede.js 在 after_post_render 阶段注入，
+ * 只在首段文字与 description 完全一致时才加，不会误伤正文首段。
+ * ============================================================ */
+
+.article-content > p.vt-post-lede {
+    position: relative;
+    margin: 2px 0 26px;
+    padding: 14px 16px 14px 18px;
+    background-color: var(--vt-bg-color);
+    border-left: 3px solid var(--vt-color-primary);
+    border-radius: 0 var(--vt-border-radius) var(--vt-border-radius) 0;
+    /* 比正文 17px 小半档：是提要，但不该低到 15px（原来配 15px 正文时是一致的） */
+    font-size: 16.5px;
+    line-height: 1.8;
+    color: var(--vt-text-color);
+    letter-spacing: .4px;
+    /* 与后文之间用留白收口，不再额外画线，避免两条横线夹着一段话 */
+}
+
+/* 导语与正文之间不需要首行缩进（部分主题模板会给 p 加 text-indent） */
+.article-content > p.vt-post-lede {
+    text-indent: 0;
+}
+
+/* 暗黑模式：浅底换成比卡片更深一档的底色，色条降饱和，避免刺眼 */
+body.dark-mode .article-content > p.vt-post-lede,
+body.dark-mode-auto .article-content > p.vt-post-lede {
+    background-color: rgba(255, 255, 255, 0.04);
+    border-left-color: color-mix(in srgb, var(--vt-color-primary) 75%, transparent);
+}
+
+@media only screen and (max-width: 767px) {
+    .article-content > p.vt-post-lede {
+        margin: 0 0 20px;
+        padding: 12px 14px 12px 15px;
+        font-size: 15px;
+        line-height: 1.85;
+    }
+}
+
+/* ============================================================
+ * 正文排版（内容页唯一真源，作用于 .content-style）
+ *
+ * 覆盖范围：文章页 post / 独立页 page / 分类页 categories / 标签页 tags
+ * 四个模板的 .content-style 容器（2026-10-31 起四页同参数，此前只有文章页）。
+ * style.css 里的 .content-style 旧规则（16px/32px 行高等）全部被本段覆盖，
+ * 排查排版问题以本文件为准，不要只看 style.css。
+ *
+ * 参数对标微信读书桌面版，手机端对标公众号：
+ *   桌面 17px / 1.85 行距 / 0.4px 字距 / #3f3f3f 墨色 / 左对齐 / 无首行缩进
+ *   列宽 688px（880 卡 − 左右各 96），每行约 40 字
+ *   手机 16px / 1.85 / 0.5px，左右各 16px，375 屏每行约 20 字
+ *
+ * 为什么不再用 15px + 816px 列宽：实测每行 49 字，一次回扫要走两个来回，
+ * 读到行尾容易串行（中文舒适区是 30-40 字）。同时桌面 15px 偏小，
+ * 那是手机上的字号——公众号 15px 在高 DPR 手机上视觉等于桌面的 17-18px。
+ *
+ * 为什么去掉 text-align: justify：中文两端对齐靠拉伸字间距实现，
+ * 遇到标点、数字、英文时会形成不均匀的「河流」，微信读书是左对齐。
+ * 中文方块字左对齐时右边缘本就接近整齐，损失很小。
+ * ============================================================ */
+
+/* 正文：阅读参数见上 */
+.content-style {
+    font-size: 17px;
+    line-height: 1.85;
+    letter-spacing: .4px;
+    color: #3f3f3f;
+    text-align: left;
+    overflow-wrap: break-word;
+}
+
+/* ============================================================
+ * 文章页卡片内边距（不动 .main-widget 布局！）
+ *
+ * 【调参速查】改完执行 npx hexo generate 刷新页面
+ *   .article-widget padding ── 文章卡四边留白；左右 64px = 正文离卡边距离
+ *   comments/related/prev-next 的左右值要跟这里保持一致，否则文字左缘不齐
+ *   正文列宽 = 880 − 64×2 = 752px，配 17px 字号约 44 字/行
+ *
+ * 2026-11 调整：左右 48 → 96 → 64。
+ *   48：列宽 784、每行 46 字，明显长于微信读书桌面版（约 35 字）；
+ *   96：列宽 688、每行 40 字，行宽合适，但留白占卡片 21.8%，卡片显空；
+ *   64：列宽 752、每行 44 字，留白 14.5%，视觉饱满且行宽仍可接受。
+ * 主栏 .main-widget 的 880px 仍不动——那是主题原生布局，2026-10-31 试过
+ * 压缩主栏宽度，结果与侧栏间距拉大到 120~190px，整页左挤右散，已回退。
+ * ============================================================ */
+@media only screen and (min-width: 768px) {
+    /* 卡片四周留白，正文不再顶到卡片边缘 */
+    .main-container:has(> .sider.sider-post) .article-widget {
+        padding: 34px 64px 38px;
+    }
+
+    /* 评论、推荐、上下篇与文章卡同宽，内边距横向对齐正文（64px） */
+    .main-container:has(> .sider.sider-post) .related-posts-widget,
+    .main-container:has(> .sider.sider-post) .comments-area {
+        padding: 24px 64px 28px;
+    }
+
+    /* 上一篇 / 下一篇：主题默认只有 10px，文字贴边，这里与正文左缘对齐 */
+    .main-container:has(> .sider.sider-post) .article-prev-next-nav .article-nav {
+        padding: 18px 64px;
+    }
+}
+
+/* 暗色模式回落到主题文字色，避免浅色墨在深底上发灰 */
+body.dark-mode .content-style,
+body.dark-mode-auto .content-style {
+    color: var(--vt-text-color);
+}
+
+/* 段距 = 0.95em（桌面 17px 字号 → 16.2px）
+ *
+ * 【换算依据，2026-11-04 重算】
+ *   正文 17px / 行高 1.85 = 31.5px，行与行之间的白 = 31.5 − 17 = 14.5px。
+ *   段间白 = 行间白 + 段距，原先 1.35em(23px) 时 = 37.4px，
+ *   是行间白的 2.6 倍，段与段之间出现一道明显的"沟"。
+ *   0.95em 后段间白 = 14.5 + 16.2 ≈ 30.7px，约等于一行高（31.5px）：
+ *   段落之间"空一行"、行与行之间"空半行"，比例 2.1 倍，分界清楚但不突兀。
+ *
+ * 【历史】
+ *   2026-10-31 曾以 15px 字号为基准拍板 20px（1.35em）；
+ *   后来正文放大到 17px，em 跟着涨到 23px，比例却没重校，故本次收紧。
+ *   28px 会让段间大于行间近两倍，读起来像散文诗，当时已否掉。 */
+.content-style p {
+    margin-top: 0.95em;
+}
+
+.content-style p:first-child {
+    margin-top: 0;
+}
+
+/* 章节标题 h2：比正文大一档（正文 17px → 标题 20px），上留白明显大于下留白 */
+.content-style h2 {
+    position: relative;
+    margin: 1.9em 0 0.8em;
+    font-size: 20px;
+    line-height: 1.45;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+/* 子比风格：短横线标在标题前三个字下面 */
+/* 有编号标题：横线挂到文字 span 上，避开编号（见 scripts/h2-txt.js） */
+.content-style h2:has(.vt-h2-txt)::before {
+    display: none;
+}
+
+.content-style .vt-h2-txt {
+    position: relative;
+    display: inline-block;
+    padding-bottom: 4px;
+    margin-bottom: -4px;
+}
+
+.content-style .vt-h2-txt::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 3em;
+    height: 4px;
+    border-radius: 2px;
+    background-color: var(--vt-color-primary);
+}
+
+/* 无编号标题：兜底横线仍挂在 h2 本身 */
+.content-style h2::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 3em;
+    height: 4px;
+    border-radius: 2px;
+    background-color: var(--vt-color-primary);
+}
+
+/* 小标题 h3 / h4：只靠字号和字重分层，不再加装饰 */
+.content-style h3 {
+    margin: 1.6em 0 0.6em;
+    font-size: 17.5px;
+    line-height: 1.55;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.content-style h4 {
+    margin: 1.4em 0 0.5em;
+    font-size: 16.5px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+/* 整段加粗独立行（加粗清理后剩 43 处：021 孔子语录 30 句 + 各篇结论段）
+ * 公元号式「黑体强调」：比正文黑一档、大半号，不做彩色小标题 */
+.content-style p > strong:only-child {
+    display: block;
+    margin: 1.5em 0 0.35em;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--vt-text-color);
+    letter-spacing: 0.3px;
+}
+
+/* 图片：公众号默认满宽、无边框、不加圆角，上下留白 20px */
+.content-style img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 20px auto;
+    border-radius: 0;
+    border: 0;
+}
+
+.content-style p:has(> img:only-child) {
+    margin: 20px 0;
+}
+
+/* 引用块：左侧细竖线，去掉灰底与引号图标，避免和导语块撞脸
+ * 颜色不能再用 --vt-text-color-grey（#999 对白底仅 2.85:1，成段引用读不动），
+ * 收到 #5f5f5f（约 7:1），仍明显弱于正文 #3f3f3f，层级还在。 */
+.content-style blockquote {
+    margin: 20px 0;
+    padding: 2px 0 2px 16px;
+    background: transparent;
+    border-left: 3px solid var(--vt-border-color);
+    border-radius: 0;
+    color: #5f5f5f;
+    font-size: 16px;
+    line-height: 1.8;
+    letter-spacing: .4px;
+}
+
+.content-style blockquote::before {
+    display: none;
+}
+
+/* 引用块在暗底上要提亮，否则 #5f5f5f 压在 #2e2e2e 上只有 2.2:1 */
+body.dark-mode .content-style blockquote,
+body.dark-mode-auto .content-style blockquote {
+    color: #a3a3a3;
+}
+
+/* 列表：主色圆点 / 主色序号 */
+.content-style ul {
+    list-style: none;
+    padding-left: 22px;
+    margin: 0.8em 0;
+}
+
+.content-style ul > li {
+    position: relative;
+    margin: 0.4em 0;
+}
+
+.content-style ul > li::before {
+    content: "";
+    position: absolute;
+    left: -14px;
+    top: 0.72em;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--vt-color-primary);
+}
+
+.content-style ol {
+    padding-left: 24px;
+    margin: 0.8em 0;
+}
+
+.content-style ol > li {
+    margin: 0.4em 0;
+}
+
+.content-style ol > li::marker {
+    color: var(--vt-color-primary);
+    font-weight: 600;
+}
+
+/* 表格：改成三线表，去掉竖线，表头一条实线收口 */
+.content-style table {
+    width: 100%;
+    margin: 20px 0;
+    border: 0;
+    border-top: 2px solid var(--vt-text-color);
+    border-bottom: 1px solid var(--vt-border-color);
+    font-size: 15px;
+    letter-spacing: 0.3px;
+}
+
+.content-style table thead {
+    background-color: transparent;
+}
+
+.content-style table th {
+    border: 0;
+    border-bottom: 1px solid var(--vt-text-color);
+    padding: 10px 12px;
+    font-weight: 600;
+    text-align: left;
+    background-color: transparent;
+}
+
+.content-style table td {
+    border: 0;
+    border-bottom: 1px solid var(--vt-border-color);
+    padding: 10px 12px;
+    background-color: transparent;
+}
+
+.content-style table tr:last-child td {
+    border-bottom: 0;
+}
+
+/* 行内代码与链接 */
+.content-style :not(pre) > code {
+    padding: 2px 5px;
+    font-size: 0.9em;
+    color: var(--vt-text-color);
+    background-color: var(--vt-bg-color);
+    border-radius: 3px;
+}
+
+.content-style a {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+    text-decoration-color: color-mix(in srgb, var(--vt-color-primary) 35%, transparent);
+}
+
+.content-style a:hover {
+    text-decoration-color: var(--vt-color-primary);
+}
+
+/* 分隔线 */
+.content-style hr {
+    height: 1px;
+    margin: 34px 0;
+    border: 0;
+    background-color: var(--vt-border-color);
+}
+
+@media only screen and (max-width: 767px) {
+    /* 手机端：16px / 1.85 / 0.5px，375 屏左右各 16px 留白 → 每行约 20 字，
+       与公众号手机端（17px / 19-21 字）基本一致。
+       原来 15px 偏小，且卡内 15px 边距贴在屏幕边上看不出留白。
+       注意：本站窄屏会被 header 撑出横向滚动，真实手机上正文宽度以视口为准。 */
+    .article-widget {
+        padding: 16px;
+    }
+
+    .content-style {
+        font-size: 16px;
+        line-height: 1.85;
+        letter-spacing: .5px;
+    }
+
+    /* 与桌面同比例：16px 字号 → 15.2px，段间白 ≈28.7px ≈ 一行高（29.6px） */
+    .content-style p {
+        margin-top: 0.95em;
+    }
+
+    .content-style h2 {
+        margin: 1.7em 0 0.7em;
+        font-size: 18px;
+    }
+
+    .content-style h2::before,
+    .content-style .vt-h2-txt::before {
+        height: 3px;
+    }
+
+    .content-style img {
+        margin: 18px auto;
+    }
+}
+
+/* ============================================================
+ * 内容页增强（Hexo 版新增）
+ *   阅读进度条 / 标题层级 / 元信息胶囊 / 侧栏目录 /
+ *   文末收尾 / 图片灯箱
+ * 全部沿用主题变量，暗黑模式自动跟随。
+ * ============================================================ */
+
+/* 顶部阅读进度条 */
+.vt-reading-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.vt-reading-progress.is-visible {
+    opacity: 1;
+}
+
+.vt-reading-progress > span {
+    display: block;
+    width: 0;
+    height: 100%;
+    background-color: var(--vt-color-primary);
+    transition: width 0.08s linear;
+}
+
+/* 标题：公众号标题规格 22px / 600，行高 1.42 */
+.article-widget .article-title {
+    font-size: 22px;
+    line-height: 1.42;
+    letter-spacing: 0;
+    font-weight: 600;
+    /* 这个标题语义上是文章主标题，2026-11 起从 div 改成 h1；
+       margin 必须显式归零，否则浏览器默认的 h1 上下边距会把元信息行推下去 */
+    margin: 2px 0 0;
+}
+
+/* 元信息：统一 13px、图标与文字对齐，分类做成胶囊 */
+.article-box {
+    gap: 8px 16px;
+    font-size: 13px;
+    padding: 16px 0 18px;
+}
+
+.article-box .meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--vt-text-color-grey);
+}
+
+.article-box .meta-item.author .avatar {
+    margin-right: 0;
+}
+
+.article-box .meta-item.category a.category-meta-item {
+    padding: 1px 9px;
+    border-radius: 999px;
+    background-color: color-mix(in srgb, var(--vt-color-primary) 8%, transparent);
+    color: var(--vt-color-primary);
+    font-size: 12px;
+    line-height: 20px;
+}
+
+body.dark-mode .article-box .meta-item.category a.category-meta-item,
+body.dark-mode-auto .article-box .meta-item.category a.category-meta-item {
+    background-color: color-mix(in srgb, var(--vt-color-primary) 18%, transparent);
+}
+
+/* 阅读次数（_config.yml → post_views）
+ *   等接口期间只显示一个省略号（单位文案一起藏起来，免得读成「…次阅读」），
+ *   数字回来换成「123 次阅读」；接口失败按 hide_on_error 整条隐藏，
+ *   绝不把 0 挂在页面上。数字用等宽数字，避免位数变化时左右跳动。 */
+.article-box .hit-conuter .vt-view-count {
+    font-variant-numeric: tabular-nums;
+}
+
+.article-box .hit-conuter.is-pending .vt-view-count::after {
+    content: "…";
+}
+
+.article-box .hit-conuter.is-pending .vt-view-label {
+    display: none;
+}
+
+.article-box .hit-conuter.is-hidden {
+    display: none !important;
+}
+
+/* ============================================================
+ * 侧栏目录（.vt-toc-aside）
+ *   与主题侧栏小工具同一质感的白卡片（--vt-bg-color-card +
+ *   3px 柔和阴影 + 主题圆角），粘在视口顶部；条目超出时卡片
+ *   内部滚动，不挤压、不遮盖侧栏其它内容。
+ * ============================================================ */
+
+/* 侧栏里目录粘顶，其余小工具保持普通流（避免两块同时 sticky 叠在一起） */
+.sider-post > div:last-child {
+    position: static;
+    top: auto;
+}
+
+.vt-toc-aside {
+    position: sticky;
+    top: 20px;
+    z-index: 6;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    /* 高度封顶：目录再长也只占卡片内部滚动，不会盖过整个侧栏 */
+    max-height: min(62vh, calc(100vh - 40px));
+    padding: 15px 16px 9px;
+    background-color: var(--vt-bg-color-card);
+    box-shadow: 0 0 3px 0 var(--vt-shadow-color);
+    border-radius: var(--vt-border-radius);
+}
+
+/* 卡片头：沿用侧栏其它小工具的标题规格（--vt-font-size-base 加粗 + 图标） */
+.vt-toc-aside__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 10px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--vt-border-color);
+    line-height: 1.3;
+}
+
+.vt-toc-aside__title {
+    display: flex;
+    align-items: center;
+    font-size: var(--vt-font-size-base);
+    font-weight: bold;
+    color: var(--vt-text-color);
+    letter-spacing: 0;
+}
+
+.vt-toc-aside__title .vt-section-icon {
+    font-size: 90%;
+    color: var(--vt-color-primary);
+    margin-right: 7px;
+}
+
+/* 节数：跟标题同一基线，小一号、次要色，不抢标题 */
+.vt-toc-aside__count {
+    flex: none;
+    font-size: 12px;
+    font-weight: normal;
+    letter-spacing: 0;
+    color: var(--vt-text-color-grey);
+}
+
+/* 条目区：静止显示 --vt-toc-rows 条，鼠标悬停（或键盘聚焦）时卡片
+ * 直接长高、展开到 --vt-toc-rows-hover 条，全程不出现滚动条。
+ * 两个变量由 _config.yml 的 toc_rows / toc_rows_hover 经模板写到
+ * 卡片行内样式，默认 3 / 6。单条高度固定 32px（行高 22 + 内边距 10）。 */
+.vt-toc-aside__body {
+    --vt-toc-row: 32px;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    max-height: calc(var(--vt-toc-row) * var(--vt-toc-rows, 3));
+    overflow-x: hidden;
+    /* 任何状态都不显示滚动条（仍可用滚轮/触控滚动） */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    transition: max-height 0.28s ease;
+}
+
+.vt-toc-aside__body::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
+
+.vt-toc-aside:hover .vt-toc-aside__body,
+.vt-toc-aside:focus-within .vt-toc-aside__body {
+    max-height: calc(var(--vt-toc-row) * var(--vt-toc-rows-hover, 6));
+}
+
+/* 列表：左侧一条细线作为“进度轴”，条目本身不带任何装饰块 */
+.vt-toc-aside ul.toc_list {
+    list-style: none;
+    margin: 0;
+    padding: 0  0 0 0;
+    border-left: 1px solid var(--vt-border-color);
+}
+
+.vt-toc-aside ul.toc_list li {
+    padding: 0;
+    margin: 0;
+}
+
+.vt-toc-aside ul.toc_list li a {
+    display: block;
+    padding: 5px 0 5px 13px;
+    margin-left: -1px;
+    border-left: 2px solid transparent;
+    font-size: 13.5px;
+    line-height: 22px !important;
+    color: var(--vt-text-color-grey);
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+/* 三级标题：缩进 + 略小，靠层级而不是符号区分 */
+.vt-toc-aside ul.toc_list li.level-3 a {
+    padding-left: 26px;
+    font-size: 13px;
+}
+
+.vt-toc-aside ul.toc_list li.level-4 a {
+    padding-left: 38px;
+    font-size: 12.5px;
+}
+
+.vt-toc-aside ul.toc_list li a:hover {
+    color: var(--vt-color-primary);
+}
+
+/* 当前所在章节 */
+.vt-toc-aside ul.toc_list li a.is-active {
+    color: var(--vt-color-primary);
+    border-left-color: var(--vt-color-primary);
+    font-weight: 600;
+}
+
+/* 无侧栏的窄屏：目录整体隐藏（正文宽度不够，强塞会挤压阅读） */
+@media only screen and (max-width: 767px) {
+    .vt-toc-aside {
+        display: none;
+    }
+}
+
+/* 文末收尾：细线 + 全文完 + 细线 */
+.vt-post-end {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin: 44px 0 28px;
+    color: var(--vt-text-color-grey);
+    font-size: 12px;
+    letter-spacing: 4px;
+}
+
+.vt-post-end::before,
+.vt-post-end::after {
+    content: "";
+    flex: 0 1 44px;
+    height: 1px;
+    background-color: var(--vt-border-color);
+}
+
+/* 图片灯箱 */
+.article-content img.vt-zoomable {
+    cursor: zoom-in;
+}
+
+.vt-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4vh 4vw;
+    background-color: rgba(0, 0, 0, 0.88);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.vt-lightbox.is-open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.vt-lightbox img {
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: 6px;
+}
+
+.vt-lightbox button {
+    position: absolute;
+    top: 18px;
+    right: 22px;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.vt-lightbox button:hover {
+    background-color: rgba(255, 255, 255, 0.26);
+}
+
+@media only screen and (max-width: 767px) {
+    .article-widget .article-title {
+        font-size: 21px;
+        line-height: 1.45;
+    }
+
+    /* 手机端元信息只留两条：作者（头像 + 昵称）与阅读时长。
+       日期 / 分类 / 阅读次数用 CSS 隐藏而不删模板节点——
+       日期仍要供 article:published_time、JSON-LD 与 <time> 使用，
+       桌面端也还要显示这五条，模板只有一份。 */
+    .article-box {
+        gap: 6px 10px;
+        font-size: 13px;
+        justify-content: space-between;
+    }
+
+    .article-box .meta-item.date,
+    .article-box .meta-item.category,
+    .article-box .meta-item.hit-conuter {
+        display: none;
+    }
+
+    /* 只剩两条，宽度够用，「读完」二字放回来，与桌面说法一致 */
+    .article-box .reading-time .rt-tail {
+        display: inline;
+    }
+
+    /* 作者与阅读时长各贴一边，行内不挤在左半边 */
+    .article-box .author {
+        margin-right: auto;
+    }
+
+    .article-box .reading-time {
+        margin-right: 0;
+    }
+
+    /* 文末标签：手机端固定最多露 3 个，第 4 个起收起来。
+       只放 3 个，宽度宽裕，胶囊回到接近桌面的尺寸（比桌面略小一档），
+       320px 极窄屏也能一行放下。桌面不受影响。 */
+    .tags-widget .tag-item:nth-child(n+4) {
+        display: none;
+    }
+
+    .article-widget .tags-widget {
+        gap: 0 8px;
+    }
+
+    .article-widget .tags-widget .tag-item a {
+        padding: 4px 12px;
+        font-size: 13px;
+        letter-spacing: 0.4px;
+    }
+
+    .vt-post-end {
+        margin: 34px 0 22px;
+    }
+
+    /* 文末「喜欢/收藏/分享/打赏」：桌面 4 项各带 30px 右距，320px 下放不下，
+       文字被压成竖排折行。手机端去掉右距、均匀铺开、文字禁止折行，
+       320px 实测 4 项一行放下。桌面不受影响。 */
+    .content-action {
+        justify-content: space-between;
+    }
+
+    .content-action .widget-action {
+        margin-right: 0;
+        white-space: nowrap;
+    }
+}
+
+/* 直链带锚点打开时，固定头部不遮住标题（点击滚动由 JS 处理偏移） */
+.article-content h2,
+.article-content h3,
+.article-content h4 {
+    scroll-margin-top: 84px;
+}
+
+/* ============================================================
+ * 俗语释义标签（分类：俗语俚语）
+ * 阐述段保持纯文字，仅段首"释义："二字着色：
+ *   <p><span class="vt-suyu-label">释义：</span>…</p>
+ * 设计要点：朱砂红避开全站链接蓝，字号略小于正文，
+ * 字距放宽，视觉上是"注"而不是"重点"，不打断阅读。
+ * ============================================================ */
+.article-content p .vt-suyu-label {
+    color: #a8402f;
+    font-weight: 500;
+    font-size: 0.92em;
+    letter-spacing: 1px;
+}
+
+body.dark-mode .article-content p .vt-suyu-label {
+    color: #d4715c;
+}
+
+/* ============================================================
+ * 文章页标签：彩色胶囊（浅底 + 同色系文字 + 标签小图标）
+ * 六色轮换：蓝 / 橙 / 绿 / 紫 / 青 / 玫红，超过 6 个从头再来。
+ * 改色：只动下面 6 组 bg / fg 成对变量。
+ * ============================================================ */
+.article-widget .tags-widget {
+    gap: 0 10px;
+}
+
+.article-widget .tags-widget .tag-item {
+    margin: 0 0 8px 0;
+}
+
+.article-widget .tags-widget .tag-item a {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 14px;
+    line-height: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    border-radius: 999px;
+    text-decoration: none;
+    transition: filter 0.15s ease;
+}
+
+/* 悬停：稍微加深 */
+.article-widget .tags-widget .tag-item a:hover {
+    filter: brightness(0.94);
+    text-decoration: none;
+}
+
+/* ---- 六色轮换 ----
+ * 注意：原来前置有 .icon 节点，标签从第 2 个孩子起算（6n+2 蓝）；
+ * 2026-11-04 图标删除后标签从第 1 个孩子起算，选择器整体前移一格，
+ * 保持视觉顺序：蓝 橙 绿 紫 青 粉。 */
+.article-widget .tags-widget .tag-item:nth-child(6n+1) a { background-color: #e8f1fe; color: #2e7cf6; }
+.article-widget .tags-widget .tag-item:nth-child(6n+2) a { background-color: #fef1e2; color: #ef8b1d; }
+.article-widget .tags-widget .tag-item:nth-child(6n+3) a { background-color: #e6f6ea; color: #31a24c; }
+.article-widget .tags-widget .tag-item:nth-child(6n+4) a { background-color: #f1eafe; color: #8b5cf6; }
+.article-widget .tags-widget .tag-item:nth-child(6n+5) a { background-color: #e2f6f4; color: #0fa5a0; }
+.article-widget .tags-widget .tag-item:nth-child(6n+6) a { background-color: #fdeaf1; color: #e5487f; }
+
+/* ---- 暗色模式：半透明同色底 + 提亮文字 ---- */
+body.dark-mode .article-widget .tags-widget .tag-item:nth-child(6n+1) a,
+body.dark-mode-auto .article-widget .tags-widget .tag-item:nth-child(6n+1) a { background-color: rgba(59, 130, 246, 0.16); color: #82b1ff; }
+body.dark-mode .article-widget .tags-widget .tag-item:nth-child(6n+2) a,
+body.dark-mode-auto .article-widget .tags-widget .tag-item:nth-child(6n+2) a { background-color: rgba(239, 139, 29, 0.16); color: #ffab5e; }
+body.dark-mode .article-widget .tags-widget .tag-item:nth-child(6n+3) a,
+body.dark-mode-auto .article-widget .tags-widget .tag-item:nth-child(6n+3) a { background-color: rgba(49, 162, 76, 0.18); color: #6fd486; }
+body.dark-mode .article-widget .tags-widget .tag-item:nth-child(6n+4) a,
+body.dark-mode-auto .article-widget .tags-widget .tag-item:nth-child(6n+4) a { background-color: rgba(139, 92, 246, 0.18); color: #b79bff; }
+body.dark-mode .article-widget .tags-widget .tag-item:nth-child(6n+5) a,
+body.dark-mode-auto .article-widget .tags-widget .tag-item:nth-child(6n+5) a { background-color: rgba(15, 165, 160, 0.18); color: #5fd0cb; }
+body.dark-mode .article-widget .tags-widget .tag-item:nth-child(6n+6) a,
+body.dark-mode-auto .article-widget .tags-widget .tag-item:nth-child(6n+6) a { background-color: rgba(229, 72, 127, 0.18); color: #ff8bb3; }
+
+/* ============================================================
+ * 文末「相关条目」：细分隔线 + 圆点链接列表
+ * 结构：<div class="vt-rel"><div class="vt-rel-h">相关条目</div><a class="vt-rel-item">…</a></div>
+ * 全站 128 篇已由脚本写入，每篇 3 条同分类链接。
+ * 改间距动 .vt-rel 的 margin/padding，改字号动 .vt-rel-item。
+ * ============================================================ */
+.article-content .vt-rel {
+    margin: 44px 0 4px;
+    padding-top: 22px;
+    border-top: 1px solid var(--vt-border-color);
+}
+
+.article-content .vt-rel-h {
+    margin: 0 0 6px;
+    font-size: 13px;
+    line-height: 1.6;
+    letter-spacing: 3px;
+    color: #9b9b9b;
+}
+
+.article-content .vt-rel-item {
+    position: relative;
+    display: block;
+    padding: 10px 0 10px 18px;
+    font-size: 14.5px;
+    line-height: 1.7;
+    color: #3f3f3f;
+    text-decoration: none;
+    border-bottom: 1px dashed rgba(0, 0, 0, 0.055);
+    transition: color 0.16s ease, padding-left 0.16s ease;
+}
+
+.article-content .vt-rel-item:last-child {
+    border-bottom: 0;
+}
+
+.article-content .vt-rel-item::before {
+    content: "";
+    position: absolute;
+    left: 2px;
+    top: 50%;
+    width: 5px;
+    height: 5px;
+    margin-top: -2.5px;
+    border-radius: 50%;
+    background-color: var(--vt-color-primary);
+    opacity: 0.55;
+}
+
+.article-content .vt-rel-item:hover {
+    color: var(--vt-color-primary);
+    padding-left: 22px;
+}
+
+.article-content .vt-rel-item:hover::before {
+    opacity: 1;
+}
+
+body.dark-mode .article-content .vt-rel-item,
+body.dark-mode-auto .article-content .vt-rel-item {
+    color: var(--vt-text-color);
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+body.dark-mode .article-content .vt-rel-h,
+body.dark-mode-auto .article-content .vt-rel-h,
+body.dark-mode .article-content .vt-rel-item:hover,
+body.dark-mode-auto .article-content .vt-rel-item:hover {
+    color: var(--vt-color-primary);
+}
+
+
+/* ============================================================
+ * 站内搜索页（layout/search.ejs + source/js/search.js）
+ *
+ * 列表部分完全复用 .media-list + .vt-card-item（与分类页同一套卡片），
+ * 这里只补搜索框、空状态、命中高亮三块，以及 [hidden] 的兜底。
+ * 配色全部走 --vt-* 变量，暗黑模式自动跟随。
+ * ============================================================ */
+
+/* 搜索框所在卡片：贴着卡片上沿，下边留一点和列表的距离 */
+.vt-search-panel {
+    padding: 14px 15px;
+}
+
+.vt-search-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* 视觉隐藏但保留给读屏的 label */
+.vt-search-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.vt-search-field {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.vt-search-input {
+    display: block;
+    width: 100%;
+    height: 44px;
+    box-sizing: border-box;
+    padding: 0 40px 0 14px;
+    border: 1px solid var(--vt-border-color);
+    border-radius: var(--vt-border-radius);
+    background-color: var(--vt-bg-color);
+    color: var(--vt-text-color);
+    font-size: 15px;
+    line-height: 44px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+/* 去掉 type=search 在 WebKit 下的原生清除按钮，统一用自绘的 */
+.vt-search-input::-webkit-search-cancel-button,
+.vt-search-input::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.vt-search-input::placeholder {
+    color: var(--vt-text-color-placeholder);
+}
+
+.vt-search-input:focus {
+    outline: none;
+    border-color: var(--vt-color-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--vt-color-primary) 12%, transparent);
+}
+
+.vt-search-clear {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    color: var(--vt-text-color-grey);
+    font-size: 14px;
+    line-height: 1;
+}
+
+.vt-search-clear:hover {
+    background-color: var(--vt-bg-color-hover);
+    color: var(--vt-text-color);
+}
+
+.vt-search-clear[hidden] {
+    display: none;
+}
+
+.vt-search-submit {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 44px;
+    padding: 0 20px;
+    border: none;
+    border-radius: var(--vt-border-radius);
+    background-color: var(--vt-color-primary);
+    color: #fff;
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.vt-search-submit:hover {
+    opacity: 0.88;
+}
+
+/* 状态行：检索中 / 共 N 篇 */
+.vt-search-status {
+    margin-top: 10px;
+    font-size: 13px;
+    line-height: 20px;
+    color: var(--vt-text-color-grey);
+}
+
+.vt-search-status[hidden] {
+    display: none;
+}
+
+/* 结果列表：.media-list 本身没有 display 声明，[hidden] 需要显式兜底 */
+.vt-search-results {
+    margin-top: 13px;
+}
+
+.vt-search-results[hidden] {
+    display: none;
+}
+
+/* 无结果块：.no-content 是 display:flex，会盖掉 [hidden] 的 display:none */
+.vt-search-nocontent[hidden] {
+    display: none;
+}
+
+/* 初始提示 + 高频标签 */
+.vt-search-prompt {
+    margin-top: 13px;
+    padding: 40px 10px 34px;
+    border-radius: var(--vt-border-radius);
+    background-color: var(--vt-bg-color-card);
+    box-shadow: 0 0 3px 0 var(--vt-shadow-color);
+    text-align: center;
+    color: var(--vt-text-color-grey);
+}
+
+.vt-search-prompt[hidden] {
+    display: none;
+}
+
+.vt-search-prompt > i {
+    font-size: 28px;
+    opacity: 0.35;
+}
+
+.vt-search-prompt > p {
+    margin-top: 12px;
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.vt-search-chips {
+    margin-top: 16px;
+    font-size: 13px;
+    line-height: 26px;
+}
+
+.vt-search-chips-label {
+    margin-right: 4px;
+    color: var(--vt-text-color-grey);
+}
+
+.vt-search-chip {
+    display: inline-block;
+    margin: 4px 6px 0 0;
+    padding: 0 12px;
+    border: 1px solid var(--vt-border-color);
+    border-radius: 999px;
+    font-size: 13px;
+    line-height: 24px;
+    color: var(--vt-text-color-grey);
+    text-decoration: none;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.vt-search-chip:hover {
+    color: var(--vt-color-primary);
+    border-color: var(--vt-color-primary);
+}
+
+/* 命中词高亮：作用在卡片的标题与摘要上 */
+.vt-search-results mark {
+    padding: 0 1px;
+    border-radius: 2px;
+    background-color: rgba(255, 214, 0, 0.38);
+    color: inherit;
+}
+
+body.dark-mode .vt-search-results mark,
+body.dark-mode-auto .vt-search-results mark {
+    background-color: rgba(255, 214, 0, 0.22);
+    color: #ffd666;
+}
+
+/* 搜索页分页：卡片自带下边距，分页容器再收一点 */
+.vt-search-pagination {
+    padding: 6px 0 0;
+}
+
+.vt-search-pagination[hidden] {
+    display: none;
+}
+
+/* 手机端：按钮只留图标，输入框 16px 避免 iOS 聚焦缩放 */
+@media (max-width: 767px) {
+    .vt-search-panel {
+        padding: 12px;
+    }
+
+    .vt-search-form {
+        gap: 8px;
+    }
+
+    .vt-search-input {
+        height: 40px;
+        font-size: 16px;
+        line-height: 40px;
+        padding: 0 36px 0 12px;
+    }
+
+    .vt-search-submit {
+        height: 40px;
+        padding: 0 13px;
+        font-size: 0;
+    }
+
+    .vt-search-submit i {
+        font-size: 15px;
+    }
+
+    .vt-search-prompt {
+        padding: 30px 10px 24px;
+    }
+}
+
+/* ============================================================
+ * twikoo 评论区（comment_provider: twikoo，2026-11-04 接入）
+ * 前端库本地化：/lib/twikoo/twikoo.min.js（1.6.44，与自建服务端
+ * https://twikoo.liublog.cn 同版本）。
+ *
+ * 【注意】twikoo 会在运行时向 head 注入自己的定制样式，选择器带
+ * .twikoo 前缀（如 .twikoo .el-button--primary），且注入晚于本文件，
+ * 同特异性时它赢。同特异性时它赢。另外 init 会把 #tcomment 容器整体替换为 #twikoo.twikoo，
+ * 锚点必须用 .twikoo 而不是自定义容器类；覆盖一律加 !important。
+ * ============================================================ */
+
+/* --- 字体与圆角跟随主题 --- */
+.twikoo {
+    font-family: inherit;
+}
+
+.twikoo .twikoo-placeholder {
+    padding: 10px 0 4px;
+    text-align: center;
+    color: var(--vt-text-color-grey);
+    font-size: 13px;
+}
+
+/* 头像圆角与主题卡片一致 */
+.twikoo .tk-avatar-img {
+    border-radius: var(--vt-border-radius);
+}
+
+/* --- 主色统一：发送按钮（覆盖 twikoo 的 #409eff） --- */
+.twikoo .el-button--primary {
+    background-color: var(--vt-color-primary) !important;
+    border-color: var(--vt-color-primary) !important;
+    color: #fff !important;
+}
+
+.twikoo .el-button--primary:hover,
+.twikoo .el-button--primary:focus,
+.twikoo .el-button--primary.is-active {
+    background-color: color-mix(in srgb, var(--vt-color-primary) 82%, #000) !important;
+    border-color: color-mix(in srgb, var(--vt-color-primary) 82%, #000) !important;
+    color: #fff !important;
+}
+
+/* 未输入内容时的禁用态：保持主色、降透明度（twikoo 用半透明蓝，这里纠正） */
+.twikoo .el-button--primary.is-disabled,
+.twikoo .el-button--primary.is-disabled:hover,
+.twikoo .el-button--primary.is-disabled:focus,
+.twikoo .el-button--primary.is-disabled:active {
+    opacity: 0.4;
+    color: #fff !important;
+    background-color: var(--vt-color-primary) !important;
+    border-color: transparent !important;
+}
+
+/* 输入框聚焦描边用主色 */
+.twikoo .el-input__inner:focus,
+.twikoo .el-textarea__inner:focus {
+    border-color: var(--vt-color-primary) !important;
+}
+
+.twikoo .tk-footer a {
+    color: inherit;
+    opacity: 0.7;
+}
+
+/* --- 暗色模式（twikoo 默认只出一套浅色，这里整体适配） --- */
+body.dark-mode .twikoo,
+body.dark-mode-auto .twikoo {
+    color: var(--vt-text-color) !important;
+}
+
+/* 输入框：深色底、浅色字 */
+body.dark-mode .twikoo .el-input__inner,
+body.dark-mode .twikoo .el-textarea__inner,
+body.dark-mode .twikoo .el-input-group__prepend,
+body.dark-mode .twikoo .el-input-group__append {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+    border-color: rgba(255, 255, 255, 0.16) !important;
+    color: var(--vt-text-color) !important;
+    box-shadow: none !important;
+}
+
+body.dark-mode .twikoo .el-input__inner::placeholder,
+body.dark-mode .twikoo .el-textarea__inner::placeholder {
+    color: var(--vt-text-color-grey) !important;
+    opacity: 0.9;
+}
+
+/* 预览、管理面板等默认按钮 */
+body.dark-mode .twikoo .el-button--default,
+body.dark-mode .twikoo .el-button.is-disabled:not(.el-button--primary) {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+    color: var(--vt-text-color) !important;
+}
+
+/* 字数统计角标（element-plus 默认白底，暗色下发亮） */
+body.dark-mode .twikoo .el-input__count,
+body.dark-mode .twikoo .el-textarea .el-input__count {
+    background: transparent !important;
+    color: var(--vt-text-color-grey) !important;
+}
+
+/* OwO 表情面板 */
+body.dark-mode .twikoo .OwO .OwO-body {
+    background-color: var(--vt-bg-color-card) !important;
+    border-color: rgba(255, 255, 255, 0.16) !important;
+    color: var(--vt-text-color) !important;
+}
+
+body.dark-mode .twikoo .OwO .OwO-body .OwO-items {
+    background-color: transparent !important;
+}
+
+/* 评论列表项分隔线弱化 */
+body.dark-mode .twikoo .tk-comments-container > .tk-comment {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+/* ============================================================
+ * 推荐模块标题（2026-11-04）
+ * 「推荐」→「精彩推荐」，结构改为与侧栏「最新文章」同款：
+ *   <div class="widget-title"><i class="fa-solid fa-star vt-section-icon"></i><span>精彩推荐</span></div>
+ * 侧栏样式定义在 style.css 的
+ *   .widget-container .widget-header .widget-title（16px / bold）
+ * 推荐模块不在 .widget-container 内，这里复制同样的取值；
+ * 原 .related-header h3（18px/600）规则因 h3 已不存在而失效，无需删。
+ * ============================================================ */
+.related-posts-widget .related-header .widget-title {
+    font-size: var(--vt-font-size-base);
+    font-weight: bold;
+    color: var(--vt-text-color);
+}

@@ -1,0 +1,95 @@
+<%
+/**
+ * about-head.ejs —— /about/ 专属的 head 增强
+ *
+ * 只在该页输出（header.ejs 里按 page.layout === 'about' 条件引入）：
+ *   1. canonical            声明规范地址，避免带参数/多域名重复收录
+ *   2. og: / twitter:       分享到微信、微博、Telegram 时有标题、摘要和缩略图
+ *   3. application/ld+json  AboutPage + Person + BreadcrumbList 结构化数据
+ *
+ * 摘要优先取 about.yml 的 description，其次 front-matter，最后「关于我」首段。
+ * 图片统一输出绝对地址（微信抓图不认相对路径）。
+ */
+var aboutData = (site.data && site.data.about) || {};
+var aboutProf = aboutData.profile || {};
+var aboutStory = aboutData.story || {};
+
+var baseUrl = String(config.url || '').replace(/\/+$/, '');
+/* page.permalink 在 Hexo 里已是完整地址（含域名），去掉 index.html 保证是目录形式 */
+var rawPermalink = String(page.permalink || page.path || 'about/');
+var pageUrl = /^https?:\/\//.test(rawPermalink)
+    ? rawPermalink.replace(/index\.html$/, '')
+    : baseUrl + '/' + rawPermalink.replace(/^\/+/, '').replace(/index\.html$/, '');
+
+/* 摘要：about.yml 的 description → front-matter description → 关于我首段 → 站点描述 */
+var rawDesc = aboutData.description
+    || page.description
+    || (aboutStory.paragraphs && aboutStory.paragraphs[0])
+    || config.description
+    || '';
+var desc = String(rawDesc).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+if (Array.from(desc).length > 110) {
+    var chars = Array.from(desc).slice(0, 110);
+    for (var di = chars.length - 1; di > 60; di--) {
+        if (/[。！？；]/.test(chars[di])) { chars = chars.slice(0, di + 1); break; }
+    }
+    desc = chars.join('').replace(/[，、：\s]+$/, '');
+}
+
+/* 分享缩略图：1200×630 专属卡片（1200x630 是微信/微博/twitter 的通用大图比例） */
+var ogImage = baseUrl + url_for('/images/about-og.jpg');
+
+var pageName = (page.title || '关于') + ' - ' + config.title;
+var personName = aboutProf.name || config.author || config.title;
+
+var ld = {
+    '@context': 'https://schema.org',
+    '@graph': [
+        {
+            '@type': 'AboutPage',
+            '@id': pageUrl + '#page',
+            'url': pageUrl,
+            'name': pageName,
+            'description': desc,
+            'inLanguage': 'zh-CN',
+            'isPartOf': {
+                '@type': 'WebSite',
+                'name': config.title,
+                'url': baseUrl + '/'
+            },
+            'about': { '@id': baseUrl + '/#person' },
+            'breadcrumb': { '@id': pageUrl + '#breadcrumb' }
+        },
+        {
+            '@type': 'Person',
+            '@id': baseUrl + '/#person',
+            'name': personName,
+            'url': pageUrl,
+            'image': ogImage,
+            'description': desc,
+            'knowsAbout': ['民俗传说', '志怪故事', '俗语俚语', '民间故事', '国学经典']
+        },
+        {
+            '@type': 'BreadcrumbList',
+            '@id': pageUrl + '#breadcrumb',
+            'itemListElement': [
+                { '@type': 'ListItem', 'position': 1, 'name': '首页', 'item': baseUrl + '/' },
+                { '@type': 'ListItem', 'position': 2, 'name': page.title || '关于', 'item': pageUrl }
+            ]
+        }
+    ]
+};
+%>
+    <link rel="canonical" href="<%= pageUrl %>">
+    <meta property="og:type" content="profile">
+    <meta property="og:site_name" content="<%= config.title %>">
+    <meta property="og:title" content="<%= pageName %>">
+    <meta property="og:description" content="<%= desc %>">
+    <meta property="og:url" content="<%= pageUrl %>">
+    <meta property="og:image" content="<%= ogImage %>">
+    <meta property="og:locale" content="zh_CN">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<%= pageName %>">
+    <meta name="twitter:description" content="<%= desc %>">
+    <meta name="twitter:image" content="<%= ogImage %>">
+    <script type="application/ld+json"><%- JSON.stringify(ld) %></script>

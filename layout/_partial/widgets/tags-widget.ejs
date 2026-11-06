@@ -1,0 +1,53 @@
+<%
+/**
+ * tags-widget.ejs —— 侧栏「文章标签」小工具（仅侧栏调用）
+ *
+ * ← inc/widget.php TagsWidget::widget()（1:1 转写）
+ * WP: get_tags(array('orderby' => 'count', 'order' => 'DESC', 'hide_empty' => false))
+ * Hexo: site.tags（按文章数倒序）。
+ *
+ * 侧栏只露一角：条数受 _config.yml 的 tags_num 限制（当前 6 条），名称
+ * 一律截到 4 个字符 —— 侧栏卡片固定宽 300px、三列等宽网格，长名字会把
+ * 格子顶破（详见 source/style/tags-widget.css）。
+ * 完整名称写进 title / aria-label，悬停显示系统提示、读屏念全名。
+ *
+ * /tags/ 标签列表页不要用这个模板，用同目录的 tags-list.ejs：
+ * 那里容器宽、要列出全部 547 个标签，不截断、不限条数，且带随机字号与配色。
+ */
+var title = vt_get_config('tags_title', __('Tags'));
+var icon = vt_get_config('tags_icon', '');
+var tags_num = parseInt(vt_get_config('tags_num', 20), 10);
+if (isNaN(tags_num) || tags_num < 0) tags_num = 20;
+
+var MAX_CHARS = 4;
+
+var all_tags = site.tags.toArray().sort(function (a, b) {
+    return (b.length || 0) - (a.length || 0);
+});
+
+// 调用条数：tags_num = 0 时显示全部标签
+if (tags_num > 0) {
+    all_tags = all_tags.slice(0, tags_num);
+}
+%>
+
+<div class="tag-container widget-container vt-tags-widget">
+    <div class="widget-header">
+        <div class="widget-title"><%- vt_section_title(title, icon) %></div>
+    </div>
+    <div class="tag-list">
+        <% all_tags.forEach(function(tag){
+            // Array.from 按码点切，中文与 emoji 都不会切坏
+            var full_name = String(tag.name === undefined || tag.name === null ? '' : tag.name);
+            var chars = Array.from(full_name);
+            var short_name = chars.length > MAX_CHARS
+                ? chars.slice(0, MAX_CHARS).join('')
+                : full_name;
+        %>
+            <a href="<%- esc_url(url_for(tag.path)) %>" class="tag-item"
+               title="<%= full_name %>" aria-label="<%= full_name %>">
+                <span>#</span><%- esc_html(short_name) %>
+            </a>
+        <% }); %>
+    </div>
+</div>

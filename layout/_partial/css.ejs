@@ -1,0 +1,29 @@
+<%
+/**
+ * css.ejs ← templates/css.php（1:1 转写）
+ */
+%>
+
+<style>
+:root {
+    --vt-color-primary: <%- vt_get_config('basic_style', '') %>;
+}
+body:before {
+    position: fixed;
+    <% if(vt_get_config('background_image', '')){ %>
+    background-image:url(<%- url_for(vt_get_config('background_image', '')) %>);
+    <% } %>
+}
+.dark-mode-switch{
+    position: relative;
+    <%
+    if(vt_get_config('dark_mode_type', 2) == 0){ // 禁用
+        %><%- 'display:none;' %><%
+    } else if(vt_get_config('dark_mode_type', 2) == 1) { // 手动
+        %><%- 'display:block;' %><%
+    } else if(vt_get_config('dark_mode_type', 2) == 2) { // 自动
+        %><%- 'display:block;' %><%
+    }
+    %>
+}
+</style>

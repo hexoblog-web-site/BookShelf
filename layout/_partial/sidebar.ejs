@@ -1,0 +1,30 @@
+<%
+/**
+ * sidebar.ejs ← dynamic_sidebar( $name )（inc/widget.php register_sidebar）
+ *
+ * WP 侧边栏小工具列表来自主题启用时写入的配置（inc/switch.php
+ * vt_after_switch_action），此处转写为 _config.yml sidebar 段：
+ *   default-sidebar: [hot-list, image-article-list, tags-widget]
+ *   posts-sidebar:   [user-widget, image-article-list, tags-widget]
+ * 小工具 DOM 与 inc/widget.php 中各 Widget 类的 widget() 输出 1:1 一致。
+ * before_widget='' / before_title='<h4>' —— 各 widget 内部已含对应结构。
+ */
+var sidebars = vt_get_config('sidebar', {});
+var widgets = sidebars[name] || [];
+%>
+<% widgets.forEach(function(widgetId){ %>
+    <% if (widgetId === 'hot-list') { %>
+        <%- partial('_partial/widgets/hot-list') %>
+    <% } else if (widgetId === 'image-article-list') { %>
+        <%- partial('_partial/widgets/image-article-list') %>
+    <% } else if (widgetId === 'category-list') { %>
+        <%- partial('_partial/widgets/category-list') %>
+    <% } else if (widgetId === 'user-widget') { %>
+        <%- partial('_partial/widgets/user-widget') %>
+    <% } else if (widgetId === 'tags-widget') { %>
+        <% /* 侧栏专用模板 tags-widget：只取 tags_num 条、名称截四字；/tags/ 列表页用 tags-list */ %>
+        <%- partial('_partial/widgets/tags-widget') %>
+    <% } else if (widgetId === 'recent-comments') { %>
+        <%- partial('_partial/widgets/recent-comments') %>
+    <% } %>
+<% }); %>

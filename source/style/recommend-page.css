@@ -1,0 +1,509 @@
+/**
+ * 推荐页样式
+ *
+ * 只负责本页专属部分：Banner、汇总条、分组标题、卡片网格。
+ * 颜色全部走主题变量（--vt-*），暗色模式自动跟随，无需另写一份。
+ *
+ * 生效范围：/recommend/ 页面容器 .page-recommend
+ * 加载方式：header.ejs 中按 page.layout === 'recommend' 条件引入
+ * 参数：主题 _config.yml 的 recommend 段（columns 控制一行几列）
+ */
+
+/* ===== 页面容器：整页铺满，不挂侧栏 ===== */
+.page-recommend .main-widget {
+    min-width: 0;
+}
+
+/* ===== 顶部 Banner ===== */
+.rc-banner {
+    position: relative;
+    height: 260px;
+    /* Banner 内已带统计，与首个分组标题的间距靠这里给 */
+    margin-bottom: 24px;
+    border-radius: var(--vt-border-radius);
+    overflow: hidden;
+    background-color: var(--vt-bg-color-grey);
+    background-position: center 40%;
+    background-size: cover;
+    background-repeat: no-repeat;
+    box-shadow: 0 6px 20px var(--vt-shadow-color);
+}
+
+/* 深色遮罩：保证白字压在任何背景图上都能看清 */
+.rc-banner::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0, 0, 0, .18) 0%, rgba(0, 0, 0, .60) 100%);
+}
+
+.rc-banner-inner {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 26px 30px;
+    box-sizing: border-box;
+    color: #fff;
+}
+
+.rc-banner-tips {
+    font-size: 13px;
+    letter-spacing: .04em;
+    opacity: .88;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, .45);
+}
+
+.rc-banner-title {
+    margin: 8px 0 0;   /* 该标题是 h1，margin 必须显式归零，否则默认上下边距会撑开 Banner */
+    font-size: 30px;
+    line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: .02em;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, .45);
+}
+
+.rc-banner-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: auto;
+}
+
+/* 左下角统计：单独一行，跟随真实数据；与友链页 .lk-banner-label 同一套视觉 */
+.rc-banner-stats {
+    font-size: 14px;
+    line-height: 1.5;
+    letter-spacing: .04em;
+    opacity: .9;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, .45);
+}
+
+.rc-banner-stats b {
+    margin: 0 2px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.rc-banner-stats .rc-dot {
+    margin: 0 8px;
+    font-style: normal;
+    opacity: .6;
+}
+
+.rc-banner-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex: none;
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .18);
+    color: #fff;
+    font-size: 13px;
+    text-decoration: none;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: background .25s ease, transform .25s ease;
+}
+
+.rc-banner-btn:hover {
+    background: rgba(255, 255, 255, .3);
+    color: #fff;
+    transform: translateX(2px);
+}
+
+/* ===== 分组 ===== */
+.rc-group {
+    margin-bottom: 4px;
+}
+
+/*
+ * 分组头：一条白底横条（与卡片同色系），标题 + 条数分列两端。
+ * 原来是灰底上一条通栏细线，标题浮在页面底色上，和图卡不一个层级；
+ * 改成白条后与下方卡片成一组，扫读时一眼能把「这一组」圈出来。
+ */
+.rc-group-head {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    margin: 30px 0 18px;
+    padding: 11px 18px;
+    border: 1px solid var(--vt-border-color);
+    border-radius: 12px;
+    background: var(--vt-bg-color-card);
+    box-shadow: 0 2px 8px var(--vt-shadow-color);
+}
+
+.rc-group:first-of-type .rc-group-head {
+    margin-top: 0;
+}
+
+.rc-group-title {
+    position: relative;
+    margin: 0;
+    padding-left: 14px;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: .01em;
+    color: var(--vt-text-color);
+}
+
+.rc-group-title::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 17px;
+    border-radius: 2px;
+    background: var(--vt-color-primary);
+}
+
+/* 条数固定在白条右端，和标题分列两头，白条看起来才「完整」 */
+.rc-group-count {
+    margin-left: auto;
+    font-size: 12.5px;
+    line-height: 1.4;
+    letter-spacing: .02em;
+    color: var(--vt-text-color-grey);
+    white-space: nowrap;
+}
+
+.rc-group-desc {
+    margin: 0;
+    max-width: 58%;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--vt-text-color-grey);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rc-group-tip {
+    flex-basis: 100%;
+    margin: 2px 0 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--vt-text-color-grey);
+    opacity: .9;
+}
+
+/* ===== 子分组 ===== */
+.rc-sub {
+    margin-top: 26px;
+}
+
+/* 紧跟分组头的第一个子分组不再叠间距，否则标题与分隔线之间会空一大块 */
+.rc-group-head + .rc-sub {
+    margin-top: 0;
+}
+
+.rc-sub + .rc-sub {
+    margin-top: 30px;
+}
+
+/* 子分组头也是一条白条，但比分组头轻：不投影、字号更小、圆角略收 */
+.rc-sub-head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    background: var(--vt-bg-color-card);
+}
+
+/* 子分组比分组低一级：字号收小、竖条变细并降低不透明度，连排 7 个也不吵 */
+.rc-sub-title {
+    position: relative;
+    margin: 0;
+    padding-left: 11px;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.5;
+    letter-spacing: .015em;
+    color: var(--vt-text-color);
+}
+
+.rc-sub-title::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 12px;
+    border-radius: 2px;
+    background: var(--vt-color-primary);
+    opacity: .55;
+}
+
+.rc-sub-desc {
+    margin: 0;
+    font-size: 13px;
+    color: var(--vt-text-color-grey);
+}
+
+/* 条数：和分组条的「32 条」同一套写法，只靠右端对齐（无分类链接时回退显示） */
+.rc-sub-count {
+    margin-left: auto;
+    font-size: 12px;
+    line-height: 1.4;
+    letter-spacing: .02em;
+    color: var(--vt-text-color-grey);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+/* 分类白条右端「more+」：跳该分类归档页，位置与分组条的条数对齐成一列 */
+.rc-sub-more {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    padding-left: 10px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: .04em;
+    /* 灰里掺一点主色：不抢标题，又能看出是能点的 */
+    color: var(--vt-text-color-grey);
+    color: color-mix(in srgb, var(--vt-color-primary) 45%, var(--vt-text-color-grey));
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color .25s ease;
+}
+
+/* 点击区向外扩一圈，白条高度不受影响（12px 字直接点太窄） */
+.rc-sub-more::after {
+    content: "";
+    position: absolute;
+    inset: -7px -4px -7px 0;
+}
+
+.rc-sub-more i {
+    font-size: 9px;
+    opacity: .7;
+    transition: transform .25s ease, opacity .25s ease;
+}
+
+.rc-sub-more:hover {
+    color: var(--vt-color-primary);
+}
+
+.rc-sub-more:hover i {
+    opacity: 1;
+    /* 加号是中心对称的，旋转看不出来，改成轻微右移 */
+    transform: translateX(2px);
+}
+
+/* ===== 卡片网格 ===== */
+.rc-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--rc-columns, 4), minmax(0, 1fr));
+    gap: 16px;
+}
+
+/* ===== 卡片 ===== */
+.rc-card {
+    display: flex;
+    flex-direction: column;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--vt-bg-color-card);
+    border: 1px solid var(--vt-border-color);
+    box-shadow: 0 2px 8px var(--vt-shadow-color);
+    text-decoration: none;
+    transition: transform .3s cubic-bezier(.22, 1, .36, 1),
+                box-shadow .3s ease,
+                border-color .3s ease;
+}
+
+.rc-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--vt-color-primary);
+    box-shadow: 0 12px 26px rgba(0, 0, 0, .12);
+}
+
+/* 封面：统一 16:9，图片撑满裁切，避免不同尺寸参差 */
+.rc-cover {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: var(--vt-bg-color-grey);
+}
+
+.rc-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform .45s ease;
+}
+
+.rc-card:hover .rc-cover img {
+    transform: scale(1.05);
+}
+
+/* 信息区 */
+.rc-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: 14px 16px 16px;
+}
+
+.rc-spec {
+    align-self: flex-start;
+    margin-bottom: 8px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: rgba(244, 93, 29, .08);
+    background: color-mix(in srgb, var(--vt-color-primary) 12%, transparent);
+    color: var(--vt-color-primary);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.6;
+}
+
+.rc-name {
+    margin: 0;
+    font-size: 15.5px;
+    font-weight: 600;
+    line-height: 1.45;
+    color: var(--vt-text-color);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.rc-desc {
+    margin: 8px 0 0;
+    font-size: 13.5px;
+    line-height: 1.7;
+    /* 浅色下 #666（5.7:1）；暗色由 dark-mode 段覆盖 */
+    color: #666;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.rc-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: auto;
+    padding-top: 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--vt-color-primary);
+}
+
+.rc-more i {
+    font-size: 12px;
+    transition: transform .25s ease;
+}
+
+.rc-card:hover .rc-more i {
+    transform: translateX(3px);
+}
+
+/* ===== 关闭 / 空数据提示 ===== */
+.rc-off {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 22px 24px;
+    border: 1px dashed var(--vt-border-color);
+    border-radius: var(--vt-border-radius);
+    background: var(--vt-bg-color-card);
+    color: var(--vt-text-color-grey);
+    font-size: 14px;
+}
+
+.rc-off i {
+    font-size: 18px;
+    color: var(--vt-color-primary);
+}
+
+.rc-off code {
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: var(--vt-bg-color-grey);
+    color: var(--vt-text-color);
+    font-size: 12.5px;
+}
+
+/* ===== 响应式：列数按屏宽收敛 ===== */
+@media screen and (max-width: 1200px) {
+    .rc-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media screen and (max-width: 900px) {
+    .rc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .rc-banner { height: 220px; }
+    .rc-banner-title { font-size: 24px; }
+}
+
+@media screen and (max-width: 600px) {
+    .rc-grid { grid-template-columns: 1fr; }
+    .rc-banner {
+        height: 200px;
+        margin-bottom: 18px;
+    }
+    .rc-banner-inner { padding: 18px 16px; }
+    .rc-banner-tips { font-size: 12px; }
+    .rc-banner-title { font-size: 21px; }
+    /* 窄屏底部：统计靠左、按钮靠右 */
+    .rc-banner-bottom {
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+    .rc-banner-stats { font-size: 12.5px; }
+    .rc-banner-stats .rc-dot { margin: 0 6px; }
+    .rc-banner-btn { padding: 6px 12px; font-size: 12px; }
+    .rc-group-head {
+        margin-top: 26px;
+        margin-bottom: 16px;
+        padding: 10px 14px;
+    }
+    .rc-group-title { font-size: 16px; padding-left: 12px; }
+    .rc-group-title::before { width: 3px; height: 15px; }
+    .rc-group-count { font-size: 12px; }
+    /* 窄屏：标题独占一行，说明与条数并排放在第二行。
+       原先说明 flex-basis:100% 会把条数挤到第三行的最右，白条被撑高 */
+    .rc-group-title { flex-basis: 100%; }
+    .rc-group-desc {
+        flex: 1 1 auto;
+        min-width: 0;
+        max-width: none;
+        margin-left: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .rc-group-count { margin-left: 0; }
+    .rc-sub { margin-top: 20px; }
+    .rc-sub + .rc-sub { margin-top: 24px; }
+    .rc-sub-head { padding: 7px 12px; border-radius: 8px; }
+    .rc-sub-title { font-size: 14.5px; }
+    .rc-cover { aspect-ratio: 16 / 8; }
+    .rc-desc { -webkit-line-clamp: 2; }
+}
+
+/* 推荐语在暗底上要反过来提亮：浅色的 #666 压到 #2a2a2a 上只有 2.4:1 */
+body.dark-mode .rc-desc,
+body.dark-mode-auto .rc-desc { color: #a6a6a6; }

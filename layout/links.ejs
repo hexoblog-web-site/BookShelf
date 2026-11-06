@@ -1,0 +1,157 @@
+<%
+/**
+ * links.ejs —— 友情链接页（Butterfly flink 版式移植）
+ *
+ * 对应 Butterfly 5.7.0 的：
+ *   layout/includes/page/flink.pug   （结构）
+ *   source/css/_page/flink.styl      （样式）
+ *   source/_data/link.yml            （数据）
+ *
+ * 触发方式：source/links/index.md 的 front-matter
+ *   layout: links
+ *
+ * 数据结构（与 Butterfly 完全一致，换主题时 yml 不用改）：
+ *   - class_name: 分组名（渲染成 h2，可空）
+ *     class_desc: 分组说明（可空）
+ *     link_list:
+ *       - name:    站点名
+ *         link:    地址
+ *         avatar:  头像
+ *         descr:   一句话描述
+ *
+ * 与 Butterfly 原版的差异：
+ *   1. 原版用 JS 拼接字符串再 insertAdjacentHTML，这里直接在模板里出 HTML，
+ *      首屏就有内容、不闪、也利于 SEO；
+ *   2. 原版支持 flink_url（远程 json）与 random 的前端分支，这里只保留
+ *      本地数据文件；打乱顺序交给 source/js/flink.js（全站已引入）；
+ *   3. 头像兜底从 theme.error_img.flink 改为 _config.yml 的 flink.error_img；
+ *   4. 列数、是否打乱可以在 _config.yml 的 flink 段调，不写死。
+ *
+ * 样式见 source/style/links-page.css（仅本页加载，见 header.ejs）。
+ */
+var cfg = vt_get_config('flink', {}) || {};
+
+var data_key   = cfg.data || 'link';                 // source/_data/<data_key>.yml
+var error_img  = cfg.error_img || '/images/link.png';
+var random_on  = cfg.random !== false;
+var columns    = parseInt(cfg.columns, 10) || 3;
+
+/* 顶部 Banner（与朋友圈页同一版式）：文案与背景都在主题 _config.yml 的 flink 段 */
+var banner_on   = cfg.banner !== false;
+var banner_bg   = cfg.banner_bg || '/images/minjian.webp';
+var banner_tips = cfg.banner_tips || '';
+var banner_btn  = cfg.banner_btn || '';
+var banner_link = cfg.banner_link || '/fcircle/';
+
+var flink_data = (site.data && site.data[data_key]) || [];
+
+/* 统计条数：左下角自动显示「共 N 个站点 · M 个分组」 */
+var total_links = 0, total_groups = 0;
+flink_data.forEach(function (g) {
+    var l = (g && g.link_list) || [];
+    if (l.length) { total_groups++; total_links += l.length; }
+});
+var banner_label = cfg.banner_label || ('共 ' + total_links + ' 个站点 · ' + total_groups + ' 个分组');
+
+/* 分组标题做锚点 id：标点符号统一换成短横，和 Butterfly 的 replaceSymbol 一致 */
+function anchor_id(name) {
+    return String(name).replace(/[\s\p{P}\p{S}]+/gu, '-').replace(/^-+|-+$/g, '') || 'flink';
+}
+%><%- partial('_partial/header') %>
+
+<div class="main-container page-link page-flink" style="--flink-columns: <%= columns %>">
+    <div class="main-widget">
+
+        <%# ===== 顶部 Banner：文案/背景见主题 _config.yml 的 flink 段 ===== %>
+        <% if (banner_on) { %>
+        <div class="lk-banner" style="background-image:url('<%- url_for(banner_bg) %>')">
+            <div class="lk-banner-inner">
+                <% if (banner_tips) { %><div class="lk-banner-tips"><%= banner_tips %></div><% } %>
+                <h1 class="lk-banner-title"><%= page.title %></h1>
+                <div class="lk-banner-bottom">
+                    <span class="lk-banner-label"><%= banner_label %></span>
+                    <% if (banner_btn) { %>
+                    <a class="lk-banner-btn" href="<%- url_for(banner_link) %>">
+                        <i class="fas fa-circle-arrow-right"></i>
+                        <span><%= banner_btn %></span>
+                    </a>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+        <% } %>
+
+        <div class="article-widget">
+            <% if (!banner_on) { %><h1 class="page-title"><%= page.title %></h1><% } %>
+
+            <div class="flink"<% if (random_on) { %> data-shuffle="true"<% } %>>
+                <% if (!flink_data.length) { %>
+                    <div class="flink-empty">
+                        <i class="fas fa-link"></i>
+                        <p>还没有添加友链</p>
+                        <p class="flink-empty-tip">在 <code>source/_data/<%= data_key %>.yml</code> 里按 Butterfly 的格式写数据即可</p>
+                    </div>
+                <% } %>
+
+                <% flink_data.forEach(function(group){ %>
+                    <%
+                    var list = (group && group.link_list) || [];
+                    if (!list.length) return;
+                    var gid = group.class_name ? anchor_id(group.class_name) : '';
+                    %>
+
+                    <% if (group.class_name) { %>
+                    <h2 class="flink-name" id="<%= gid %>">
+                        <a href="#<%= gid %>" class="headerlink" title="<%= esc_attr(group.class_name) %>"></a>
+                        <%= esc_html(group.class_name) %>
+                    </h2>
+                    <% } %>
+
+                    <% if (group.class_desc) { %>
+                    <div class="flink-desc"><%= esc_html(group.class_desc) %></div>
+                    <% } %>
+
+                    <div class="flink-list">
+                        <% list.forEach(function(item){ %>
+                        <%
+                        if (!item || !item.name || !item.link) return;
+                        var avatar = item.avatar || error_img;
+                        var desc   = item.descr || item.description || '';
+                        %>
+                        <div class="flink-list-item">
+                            <a href="<%- esc_url(item.link) %>"
+                               title="<%= esc_attr(item.name) %>"
+                               target="_blank"
+                               rel="noopener nofollow">
+                                <div class="flink-item-icon">
+                                    <img class="no-lightbox"
+                                         src="<%- esc_url(url_for(avatar)) %>"
+                                         onerror="this.onerror=null;this.src='<%- url_for(error_img) %>'"
+                                         alt="<%= esc_attr(item.name) %>"
+                                         loading="lazy">
+                                </div>
+                                <div class="flink-item-text">
+                                    <div class="flink-item-name"><%= esc_html(item.name) %></div>
+                                    <div class="flink-item-desc" title="<%= esc_attr(desc) %>"><%= esc_html(desc) %></div>
+                                </div>
+                            </a>
+                        </div>
+                        <% }); %>
+                    </div>
+                <% }); %>
+
+                <% /* 页面正文（front-matter 下面的内容）接在友链后面，和 Butterfly 一致 */ %>
+                <% if (page.content) { %>
+                <div class="flink-content"><%- page.content %></div>
+                <% } %>
+            </div>
+        </div>
+    </div><!-- .main-widget -->
+
+    <div class="sider">
+        <%- partial('_partial/sidebar', {name: 'default-sidebar'}) %>
+        <%- vt_theme_ad('ad_sidebar') %>
+    </div>
+</div>
+
+<%- partial('_partial/footer') %>

@@ -1,0 +1,104 @@
+<%
+/**
+ * last.ejs ← templates/home/last.php（1:1 转写）
+ *
+ * 数据源差异说明：
+ *  - WP 使用自定义 SQL（置顶优先 UNION ALL + 分类过滤 + 分页）；
+ *    Hexo 静态站由 hexo generator index 完成分页（等价于
+ *    get_option('posts_per_page') → 站点 per_page 配置），
+ *    列表数据为 page.posts。
+ *  - posts_ids / posts_not_in_ids（分类过滤）在 EJS 内按分类名过滤，
+ *    对应 WP SQL 中的 term_relationships IN / NOT IN 子查询。
+ *  - 置顶文章：WP 通过 sticky_posts 优先排序；Hexo 使用 front-matter
+ *    sticky: true 时 generator 会自动将置顶文章提前（行为一致）。
+ */
+var vt_config = vt_get_config();
+
+var full_width = vt_config['full_width'];
+var full_width_class = full_width==1 || full_width===true ? 'full-width' : '';
+
+var vt_list_type = vt_config['list_type'];
+var vt_list_type_class = '';
+if(vt_list_type > 0){
+    var vt_columns_num = vt_config['vt_columns'];
+    vt_list_type_class = 'vt-column vt-column-' + vt_columns_num;
+}
+
+// 获取配置（WP: vt_get_config('posts_ids', []) 分类过滤）
+var posts_ids = vt_get_config('posts_ids', []);
+var posts_not_in_ids = vt_get_config('posts_not_in_ids', []);
+if (typeof posts_ids === 'string') posts_ids = posts_ids ? [posts_ids] : [];
+if (typeof posts_not_in_ids === 'string') posts_not_in_ids = posts_not_in_ids ? [posts_not_in_ids] : [];
+
+function inNames(cats, names) {
+  return cats.some(function (c) { return names.indexOf(c.name) !== -1; });
+}
+
+var list_posts = (page.posts && page.posts.toArray) ? page.posts.toArray() : [];
+list_posts = list_posts.filter(function (p) {
+    var cats = p.categories ? p.categories.toArray() : [];
+    if (posts_ids.length && !inNames(cats, posts_ids)) return false;
+    if (posts_not_in_ids.length && inNames(cats, posts_not_in_ids)) return false;
+    return true;
+});
+
+// 分页（WP: paginate_links type=list, end_size=2, mid_size=2）
+var paged = page.current || 1;
+var max_num_pages = page.total || 1;
+function linkFor(n) {
+    return n === 1 ? url_for(page.base || '/') : url_for((page.base || '/') + 'page/' + n + '/');
+}
+%>
+
+<div class="main-container" class="<%= esc_attr(full_width_class) %>">
+    <div class="main-widget">
+        <%- vt_theme_ad('ad_header') %>
+
+
+        <% /* wp_reset_postdata() */ %>
+
+
+
+        <div class="main-widget">
+            <div class="media-list <%= esc_attr(vt_list_type_class) %>">
+                <% if ( list_posts.length ) { %>
+                    <%
+                    list_posts.forEach(function(p) {
+                    %>
+                        <%- partial('_partial/card', {post: p}) %>
+                    <% }); %>
+                <% } else { %>
+                    <div class="no-content">
+                        <img src="<%- url_for('/images/empty.png') %>" alt="">
+                        <p><%= __('No Content') %></p>
+                    </div>
+                <% } %>
+            </div>
+
+        </div>
+
+        <div class="vt-captain-pagination pagination-container">
+            <%- vt_paginate_links({
+                current: paged,
+                total: max_num_pages,
+                prev_text: '<i class="fas fa-chevron-left"></i>',
+                next_text: '<i class="fas fa-chevron-right"></i>',
+                'type': 'list',
+                end_size: 2,
+                mid_size: 2,
+                linkFor: linkFor
+            }) %>
+        </div>
+
+        <%- vt_theme_ad('ad_footer') %>
+    </div>
+
+    <% if(!full_width || full_width===false){ %>
+        <div class="sider">
+            <%- partial('_partial/sidebar', {name: 'default-sidebar'}) %>
+
+            <%- vt_theme_ad('ad_sidebar') %>
+        </div>
+    <% } %>
+
+</div>

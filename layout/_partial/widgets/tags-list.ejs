@@ -1,0 +1,62 @@
+<%
+/**
+ * tags-list.ejs —— /tags/ 标签列表页（仅 layout/tags.ejs 调用）
+ *
+ * 与侧栏的 tags-widget.ejs 是同一套 WP DOM（.tag-container / .tag-list /
+ * .tag-item，对应 inc/widget.php TagsWidget::widget()），但三处不同：
+ *   1. 列出**全部**标签 —— 不读 tags_num（那是侧栏的条数上限），
+ *      站点 500+ 个标签在这里要能全部看到；
+ *   2. 名称**不截断** —— 正文容器宽 850px，用不着为格子宽度让步；
+ *   3. 外层多一个 .vt-tags-list 类 —— 用来解除侧栏那套
+ *      max-height + 内部滚动，让标签自然铺满页面而不是挤在一个框里。
+ *
+ * 排序与侧栏一致：按文章数倒序（WP: orderby=count）。
+ *
+ * 视觉上是「标签云」的效果（随机字号 + 随机配色），但文件名跟着页面走：
+ * 这是列表页（全量枚举），侧栏那个叫 tags-widget（只取几条、截四字）。
+ *
+ * 随机字号 / 随机配色：CSS 没有随机函数，nth-child 又写不完 500+ 个，
+ * 所以在模板里按标签名算一个 32 位散列（FNV-1a），再切成三份分别当
+ * 色相、饱和度、字号。好处是「随机但稳定」——同一个标签每次生成出来
+ * 的大小与颜色都一样，刷新页面不会整屏跳色；换标签名才换样子。
+ * 具体数值交给 tags-list.css 翻译成颜色（它负责深浅两套皮肤）。
+ */
+var title = vt_get_config('tags_title', __('Tags'));
+var icon = vt_get_config('tags_icon', '');
+
+var all_tags = site.tags.toArray().sort(function (a, b) {
+    return (b.length || 0) - (a.length || 0);
+});
+
+/* FNV-1a 32 位散列：短字符串也能散得比较匀，实现只有几行 */
+function vt_tag_seed(str) {
+    var h = 2166136261;
+    for (var i = 0; i < str.length; i++) {
+        h ^= str.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+}
+%>
+
+<div class="tag-container widget-container vt-tags-list">
+    <div class="widget-header">
+        <div class="widget-title"><%- vt_section_title(title, icon) %></div>
+    </div>
+    <div class="tag-list">
+        <% all_tags.forEach(function(tag){
+            var seed = vt_tag_seed(tag.name);
+
+            var hue  = seed % 360;                                   /* 0 ~ 359 */
+            var sat  = 58 + (seed >>> 8) % 24;                       /* 58% ~ 81% */
+            var size = (12 + ((seed >>> 16) % 1000) / 1000 * 8)      /* 12.0 ~ 20.0px */
+                       .toFixed(1);
+        %>
+            <a href="<%- esc_url(url_for(tag.path)) %>" class="tag-item"
+               style="--vt-tag-h: <%= hue %>; --vt-tag-s: <%= sat %>%; --vt-tag-size: <%= size %>px;"
+               title="<%- esc_html(tag.name) %>（<%= tag.length %> 篇）">
+                <span>#</span><%- esc_html(tag.name) %>
+            </a>
+        <% }); %>
+    </div>
+</div>

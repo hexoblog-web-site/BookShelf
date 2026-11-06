@@ -1,0 +1,105 @@
+<%
+/**
+ * tag.ejs ← tag.php（标签列表页，1:1 转写）
+ *
+ * @author: vtheme
+ * @link https://www.liublog.cn
+ */
+
+/* get_header() */
+%><%- partial('_partial/header') %><%
+
+var vt_config = vt_get_config();
+
+var full_width = 0;
+
+var tagName = page.tag;
+var tagID = page.tag_id || '';
+
+/* WP: get_term_meta($cat, 'full_width')（跟随系统设置/强制全宽）；
+   Hexo 用 term_meta 映射，同 category.ejs */
+var term_meta_map = vt_get_config('term_meta', {}) || {};
+var term_meta = term_meta_map[tagName] || {};
+var term_full_width = term_meta['full_width'];
+full_width = '';
+if(term_full_width == 0 || term_full_width === undefined){ // 分类跟随系统设置
+    full_width = vt_config['full_width']==1 || vt_config['full_width']===true ? 'full-width' : '';
+}
+if(term_full_width == 1) {
+    full_width = 'full-width';
+}
+
+// 获取标签第一篇文章的缩略图或者图片
+var banner_image = url_for('/images/banner.jpg');
+var first_posts = (page.posts && page.posts.toArray ? page.posts.toArray() : []).slice(0, 1);
+if (first_posts.length) {
+    var thumb = first_posts[0].cover || first_posts[0].banner;
+    banner_image = thumb ? url_for(thumb) : banner_image;
+}
+%>
+
+
+<div class="banner" style="background-image: url(<%= banner_image %>)">
+    <div class="banner-container">
+        <h1 class="title"><%= tagName %></h1>
+        <% if(0 && tagName){ %>
+            <div class="description"><%= tagName %></div>
+        <% } %>
+    </div>
+</div>
+
+
+<div class="main-container" <%- full_width %> >
+    <div class="main-widget">
+        <% if (page.posts && page.posts.length) { %>
+            <div class="media-list">
+                <%
+                /* WP: WP_Query(tag__in, orderby, posts_per_page, paged)
+                   —— Hexo generator tag 已按 per_page 分页提供 page.posts */
+                var paged = page.current || 1;
+                %>
+
+                <% page.posts.forEach(function(post){ %>
+                    <%- partial('_partial/card', {post: post}) %>
+                <% }); %>
+            </div>
+        <% } else { %>
+            <div class="no-content">
+                <img src="<%- url_for('/images/empty.png') %>">
+                <p><%= __('No Content') %></p>
+            </div>
+        <% } %>
+
+        <%
+        var max_num_pages = page.total || 1;
+        function linkFor(n) {
+            return n === 1 ? url_for(page.base || '') : url_for((page.base || '') + 'page/' + n + '/');
+        }
+        %>
+
+        <div class="vt-captain-pagination pagination-container">
+            <%- vt_paginate_links({
+                current: paged,
+                total: max_num_pages,
+                prev_text: '<i class="fas fa-chevron-left"></i>',
+                next_text: '<i class="fas fa-chevron-right"></i>',
+                'type': 'list',
+                end_size: 2,
+                mid_size: 2,
+                linkFor: linkFor
+            }) %>
+        </div>
+    </div>
+
+
+    <% if(!full_width){ %>
+        <div class="sider">
+            <%- partial('_partial/sidebar', {name: 'default-sidebar'}) %>
+
+            <%- vt_theme_ad('ad_sidebar') %>
+        </div>
+    <% } %>
+</div>
+
+<% /* get_footer() */ %>
+<%- partial('_partial/footer') %>

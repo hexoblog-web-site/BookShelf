@@ -1,0 +1,22 @@
+<%
+/**
+ * 404.ejs ← 404.php（1:1 转写）
+ *
+ * @author: vtheme <mail@vtheme.cn>
+ * @link https://www.liublog.cn
+ */
+
+/* get_header() */
+%><%- partial('_partial/header') %><%
+%>
+
+
+<div class="page-no-found">
+	<img src="<%- url_for('/images/404.svg') %>" alt="<%= esc_attr('404 ' + __('Page not found')) %>">
+	<h1>404 <%= esc_html(__('Page not found')) %></h1>
+	<a href="<%- esc_url(url_for('/')) %>"><%= esc_html(__('Go to home')) %></a>
+</div>
+
+
+<% /* get_footer() */ %>
+<%- partial('_partial/footer') %>

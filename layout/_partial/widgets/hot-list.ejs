@@ -1,0 +1,36 @@
+<%
+/**
+ * hot-list.ejs ← inc/widget.php HotWidget::widget()（1:1 转写）
+ *
+ * WP: 按 post_views_count meta 倒序取 4 篇；
+ * Hexo: 按 front-matter views 倒序（未设置视为 0，行为一致）。
+ */
+var title = vt_get_config('popular_title', __('Popular'));
+var icon = vt_get_config('popular_icon', '');
+var posts_per_page = parseInt(vt_get_config('popular_num', 4), 10);
+if (isNaN(posts_per_page) || posts_per_page <= 0) posts_per_page = 4;
+
+var hot_query = site.posts.toArray().sort(function (a, b) {
+    return (b.views || 0) - (a.views || 0);
+}).slice(0, posts_per_page);
+%>
+<div class="hot widget-container">
+    <div class="widget-header">
+        <div class="widget-title"><%- vt_section_title(title, icon) %></div>
+    </div>
+    <ul class="hot-list">
+        <% if (hot_query.length) { %>
+            <% hot_query.forEach(function(post){ %>
+                <li>
+                    <div class="hot-order"></div>
+                    <div class="item">
+                        <a href="<%- esc_url(url_for(post.path)) %>"><%= esc_html(post.title) %></a>
+                        <div class="time">
+                            <%= esc_html(vt_get_time(date(post.date, 'YYYY-MM-DD HH:mm:ss'))) %>
+                        </div>
+                    </div>
+                </li>
+            <% }); %>
+        <% } %>
+    </ul>
+</div>

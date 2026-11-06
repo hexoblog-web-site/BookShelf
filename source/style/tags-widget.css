@@ -1,0 +1,91 @@
+/* ============================================================
+ * tags-widget.css —— 侧栏「文章标签」样式（只取有限几条）
+ *
+ * 对应 DOM：layout/_partial/widgets/tags-widget.ejs
+ *          .sider > .tag-container.vt-tags-widget > .tag-list > .tag-item
+ *
+ * 原主题（style.css 4864 起）是 flex-wrap 换行，标签宽度跟着文字
+ * 走，长短混在一起就成了参差的两列。这里改为三列等宽网格：
+ *   - 每格 flex-basis = (100% - 2 个 gap) / 3，gap 8px；
+ *   - 文字截到 4 字（模板里切好），超出用省略号兜底，不撑破格子；
+ *   - 完整名称在标签的 title / aria-label 上，悬停显示系统提示；
+ *   - 悬停时先抖一下再定住在 1.08 倍，给一点手感反馈。
+ *
+ * 作用域限定在 .sider：/tags/ 标签列表页走 tags-list.css，那边是全量
+ * 枚举 + 随机字号 + 随机配色，不适用这里的等宽三列规则。
+ *
+ * 加载顺序：header.ejs 里紧跟 bookshelf-extra.css 之后引入，
+ * 保证能压过 style.css 的默认标签样式。
+ * ============================================================ */
+
+.sider .tag-container .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 15px;
+}
+
+.sider .tag-container .tag-list .tag-item {
+    flex: 0 0 calc((100% - 16px) / 3);
+    box-sizing: border-box;
+    min-width: 0;
+    margin: 0;
+    padding: 7px 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transform-origin: center center;
+    transition: color 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.18s ease;
+}
+
+/* # 号缩到正文同级，给四个汉字腾出宽度（原 16px 会把格子撑满） */
+.sider .tag-container .tag-list .tag-item span {
+    font-size: 12px;
+    font-weight: 600;
+    top: 0;
+    margin-right: 1px;
+    opacity: 0.72;
+}
+
+/* 悬停：抖动一次 → 停在放大状态，同时抬高阴影 */
+.sider .tag-container .tag-list .tag-item:hover,
+.sider .tag-container .tag-list .tag-item:focus-visible {
+    color: var(--vt-color-primary);
+    border-color: var(--vt-color-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    transform: scale(1.08);
+    z-index: 3;
+    animation: vt-tag-shake 0.32s ease-in-out;
+}
+
+.sider .tag-container .tag-list .tag-item:focus-visible {
+    outline: 2px solid var(--vt-color-primary);
+    outline-offset: 1px;
+}
+
+@keyframes vt-tag-shake {
+    0%   { transform: scale(1)    translateX(0); }
+    20%  { transform: scale(1.03) translateX(-2px) rotate(-1.2deg); }
+    45%  { transform: scale(1.07) translateX(2px)  rotate(1deg); }
+    70%  { transform: scale(1.06) translateX(-1px) rotate(-0.5deg); }
+    100% { transform: scale(1.08) translateX(0)    rotate(0); }
+}
+
+/* 深色模式下阴影要更沉一点，否则放大后边缘糊 */
+body.dark-mode .sider .tag-container .tag-list .tag-item:hover,
+body.dark-mode-auto .sider .tag-container .tag-list .tag-item:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+}
+
+/* 系统开了「减少动态效果」就只保留放大，不做抖动与位移动画 */
+@media (prefers-reduced-motion: reduce) {
+    .sider .tag-container .tag-list .tag-item {
+        transition: color 0.2s, border-color 0.2s;
+    }
+
+    .sider .tag-container .tag-list .tag-item:hover,
+    .sider .tag-container .tag-list .tag-item:focus-visible {
+        transform: none;
+        animation: none;
+    }
+}

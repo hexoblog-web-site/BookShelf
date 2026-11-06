@@ -1,0 +1,32 @@
+<%
+/**
+ * category-list.ejs ← inc/widget.php CategoryWidget::widget()（1:1 转写）
+ *
+ * WP: wp_nav_menu(array('menu_class' => 'side-menu', 'depth' => 2,
+ * 'walker' => new SideMenu(), 'fallback_cb' => 'SideMenu::fallback'))
+ * —— 菜单数据来自 _config.yml side_menu（含 count 字段时输出分类数量括号）。
+ *
+ * 【新增】side_menu 留空时，自动调用站点文章分类（site.categories），
+ * 不再像 WP 那样只输出一条“请创建侧边栏菜单”的提示；
+ * 输出 DOM 与 SideMenu Walker 一致（见 helpers.js vt_category_list）。
+ * 标题 / 图标 / 调用条数取自 _config.yml category_title / category_icon / category_num。
+ */
+var title = vt_get_config('category_title', __('Category List'));
+var icon = vt_get_config('category_icon', '');
+var menu_items = vt_get_config('side_menu', []);
+var category_num = vt_get_config('category_num', 0);
+%>
+<div class="category widget-container">
+    <div class="widget-header">
+        <div class="widget-title">
+            <%- vt_section_title(title, icon) %>
+        </div>
+    </div>
+    <div class="category-list">
+        <% if (menu_items && menu_items.length) { %>
+            <%- vt_side_menu(menu_items) %>
+        <% } else { %>
+            <%- vt_category_list(category_num) %>
+        <% } %>
+    </div>
+</div>

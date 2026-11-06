@@ -1,0 +1,22 @@
+<%
+/**
+ * page-fullwidth.ejs ← page-fullwidth.php（Template Name: FullWidth，1:1 转写）
+ * 使用方式：Markdown front-matter 中写 layout: page-fullwidth
+ */
+
+/* get_header() */
+%><%- partial('_partial/header') %><%
+
+var vt_config = vt_get_config();
+%>
+
+
+<div class="main-container">
+    <div class="main-widget">
+        <%- page.content %>
+    </div>
+</div>
+
+
+<% /* get_footer() */ %>
+<%- partial('_partial/footer') %>

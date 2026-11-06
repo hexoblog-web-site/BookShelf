@@ -1,0 +1,398 @@
+<%
+/**
+ * equipment.ejs —— 装备 / 好物页
+ *
+ * 页面地址：/equipment/（默认不进导航）
+ * 触发方式：source/equipment/index.md 的 front-matter 写 layout: equipment
+ * 数据来源：source/_data/equipment.yml（数据结构见文件开头注释）
+ *
+ * 版式：Banner（含统计）→ 分组（大标题）→ 子分组（小标题）→ 卡片网格
+ * 卡片沿用全站配色变量（--vt-*），暗色模式自动跟随，不用另写一套。
+ *
+ * 两种分组写法：
+ *   1. 手写商品清单   good_things → equipment_list（本页主用，卡片带价格和购买入口）
+ *   2. 自动取文       auto: true + mode（能力保留，装备页不要用；
+ *                      文章推荐已拆到 layout/recommend.ejs 与 /recommend/）
+ *
+ * 开关：equipment.enable（总开关）
+ * 参数：主题 _config.yml 的 equipment 段，全部带注释
+ * 样式：source/style/equipment-page.css，仅本页加载（见 header.ejs）
+ */
+var cfg      = vt_get_config('equipment', {}) || {};
+var eq_on    = cfg.enable !== false;
+var data_key = cfg.data || 'equipment';
+var list     = (site.data && site.data[data_key]) || [];
+
+var eq_bg     = cfg.top_background || '/images/friend-circle.webp';
+var eq_cover  = cfg.error_img || cfg.default_cover || '/images/default-cover.webp';
+var eq_cols   = parseInt(cfg.columns, 10) || 4;
+var eq_link   = cfg.bottom_right_link || '/links/';
+var txt_web   = cfg.link_text_web || '前往官网';
+var txt_post  = cfg.link_text_post || '查看文章';
+
+/* 电商平台：角标文案 + 配色类名。
+   platform 写成 tb / jd / pdd / other 都行，写中文（淘宝）也能认 */
+var plats = {
+    tb:    { name: '淘宝',   cls: 'tb' },
+    jd:    { name: '京东',   cls: 'jd' },
+    pdd:   { name: '拼多多', cls: 'pdd' },
+    other: { name: '官网',   cls: 'other' }
+};
+
+function plat_of(p) {
+    if (!p) return null;
+    var key = String(p).toLowerCase();
+    if (plats[key]) return plats[key];
+    for (var k in plats) {
+        if (plats[k].name === String(p)) return plats[k];
+    }
+    return { name: String(p), cls: 'other' };
+}
+
+
+/* 外链判断：http(s) 开头算外部站点，其余当站内文章 */
+function is_ext(u) { return /^https?:\/\//i.test(String(u || '')); }
+
+/* 把一篇 Hexo 文章压成卡片数据，字段名跟手写清单保持一致 */
+function post_item(post) {
+    return {
+        name: post.title,
+        specification: date(post.date, 'YYYY-MM-DD'),
+        description: post.description || '',
+        image: post.cover || '',
+        link: post.path
+    };
+}
+
+/**
+ * auto 分组：从站内文章里取卡片，三种取法
+ *
+ *   mode: category（默认）按一级分类分组，每类取最新 limit 篇
+ *   mode: featured        只取 front-matter 里写了 featured: true 的文章
+ *   mode: latest          不看分类，取全站最新 limit 篇
+ *
+ * group.limit      取几篇（category 模式是每个分类，另两种是整组）
+ * group.categories 仅 category 模式生效，留空 = 全部一级分类
+ * group.title      子分组标题，留空则不显示小标题（featured / latest 常留空）
+ * group.fallback   仅 featured 模式：写 latest 时，标记不足 limit 篇用最新文章补足
+ * group.picks      组内最前面先随机铺 N 篇（不带小标题），再接正式的取文结果
+ * group.more       仅 featured / latest 模式：小标题右端「more+」的跳转地址，
+ *                  分类模式会自动取该分类归档页，不用写
+ */
+function posts_cards(query, limit) {
+    return query.sort('-date').limit(limit).toArray().map(post_item);
+}
+
+/* 随机抽 N 篇：先洗牌再取前 N。构建时抽一次，重新生成页面才会换一批 */
+function pick_random(pool, n) {
+    var arr = (typeof pool.toArray === 'function' ? pool.toArray() : pool.slice()).slice();
+    for (var i = arr.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr.slice(0, n).map(post_item);
+}
+
+function auto_subs(group) {
+    var limit = parseInt(group.limit, 10) || 3;
+    var picks = parseInt(group.picks, 10) || 0;
+    var mode  = group.mode || 'category';
+    var title = group.title == null ? '' : String(group.title);
+
+    /* group.picks：组内先铺一块随机卡片（不带小标题），再接正式的取文结果 */
+    function with_picks(subs, pool) {
+        if (!picks || !pool.length) return subs;
+        var first = { title: '', description: '', items: pick_random(pool, picks), picks: true };
+        return first.items.length ? [first].concat(subs) : subs;
+    }
+
+    /* 取法一、二：featured / latest —— 全站一条流水，只出一个子分组 */
+    if (mode === 'featured' || mode === 'latest') {
+        var picked = mode === 'featured'
+            ? site.posts.filter(function (p) { return p.featured; })
+            : site.posts;
+        var items = posts_cards(picked, limit);
+        var pool  = typeof picked.toArray === 'function' ? picked.toArray() : picked;
+
+        /* 标记的文章不够，用最新的补齐（仅在写了 fallback: latest 时） */
+        if (mode === 'featured' && items.length < limit && group.fallback === 'latest') {
+            var have = {};
+            items.forEach(function (i) { have[i.link] = true; });
+            site.posts.sort('-date').toArray().forEach(function (p) {
+                if (items.length >= limit || have[p.path]) return;
+                items.push(post_item(p));
+            });
+        }
+        return with_picks([{
+            title: title,
+            description: '',
+            items: items,
+            /* 没有分类归档可指，只有写了 group.more 才出「more+」 */
+            link: group.more ? url_for(group.more) : ''
+        }], pool);
+    }
+
+    /* 取法三（默认）：按一级分类，分类按文章数从多到少排，避免顺序飘 */
+    var wanted = (group.categories || []).map(String);
+    var cats   = site.categories.filter(function (c) { return !c.parent; });
+    var arr    = typeof cats.toArray === 'function' ? cats.toArray() : cats;
+
+    if (wanted.length) {
+        arr = arr.filter(function (c) { return wanted.indexOf(c.name) > -1; });
+    }
+    arr.sort(function (a, b) { return b.posts.length - a.posts.length; });
+
+    /* 随机池取这些分类下的全部文章，别抽到本组范围外的内容 */
+    var cat_pool = [];
+    arr.forEach(function (c) {
+        var ps = typeof c.posts.toArray === 'function' ? c.posts.toArray() : c.posts;
+        cat_pool = cat_pool.concat(ps);
+    });
+
+    return with_picks(arr.map(function (c) {
+        return {
+            title: c.name,
+            description: '',
+            items: posts_cards(c.posts, limit),
+            /* 分类归档页，供白条右端的「more+」跳转 */
+            link: url_for(c.path)
+        };
+    }), cat_pool);
+}
+
+/* 汇总：子分组数 = 小标题数，条目数 = 全部卡片数（auto 分组要先算出来）
+   取不到文章的子分组直接丢掉，避免页面上出现空标题 */
+var groups = list.map(function (g) {
+    var subs = g.auto
+        ? auto_subs(g)
+        : (g.good_things || []).map(function (t) {
+            return { title: t.title, description: t.description, items: t.equipment_list || [] };
+        });
+    return { raw: g, subs: subs.filter(function (s) { return s.items.length; }) };
+}).filter(function (g) { return g.subs.length; });
+
+var group_count = 0, item_count = 0;
+groups.forEach(function (g) {
+    g.subs.forEach(function (s) {
+        /* 随机铺的那块没有小标题，不算一个分组，但卡片数照算 */
+        if (!s.picks) group_count++;
+        item_count += s.items.length;
+    });
+});
+%><%- partial('_partial/header') %>
+
+<% if (!eq_on) { %>
+
+<div class="main-container page-equipment">
+    <div class="main-widget">
+        <div class="eq-off">
+            <i class="fas fa-circle-info"></i>
+            <span>装备页已关闭，打开主题 <code>_config.yml</code> 里的 <code>equipment.enable</code> 即可恢复。</span>
+        </div>
+    </div>
+</div>
+
+<% } else if (!item_count) { %>
+
+<div class="main-container page-equipment" full-width>
+    <div class="main-widget">
+        <div class="eq-off">
+            <i class="fas fa-box-open"></i>
+            <span>还没有内容，在 <code>source/_data/<%= data_key %>.yml</code> 里按格式添加即可。</span>
+        </div>
+    </div>
+</div>
+
+<% } else { %>
+
+<div class="main-container page-equipment" full-width style="--eq-columns: <%= eq_cols %>">
+    <div class="main-widget">
+
+        <%# Banner %>
+        <div class="eq-banner" style="background-image:url('<%- url_for(eq_bg) %>')">
+            <div class="eq-banner-inner">
+                <div class="eq-banner-tips"><%= cfg.tips || '装备清单' %></div>
+                <h1 class="eq-banner-title"><%= cfg.title || '我的装备' %></h1>
+                <div class="eq-banner-bottom">
+                    <%# 版式与友链页一致：上面只留「小字 + 大标题」两句，统计单独一行靠左 %>
+                    <span class="eq-banner-stats">
+                        共 <b><%= item_count %></b> 件<i class="eq-dot">·</i><b><%= group_count %></b> 个小类
+                    </span>
+                    <a class="eq-banner-btn" href="<%- url_for(eq_link) %>">
+                        <i class="fas fa-circle-arrow-right"></i>
+                        <span><%= cfg.bottom_right || '更多好物' %></span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <% groups.forEach(function (g) {
+            var group = g.raw;
+            var gTitle = group.class_name || '';
+            var gDesc  = group.description || '';
+            var gTip   = group.tip || '';
+        %>
+        <section class="eq-group">
+
+            <% if (gTitle || gDesc || gTip) {
+                var gCount = 0;
+                g.subs.forEach(function (s) { gCount += s.items.length; });
+                /* 组内只有一个子分组且带小标题时，条数已在小标题旁，这里不重复 */
+                var showCount = g.subs.length > 1 || !g.subs[0].title;
+            %>
+            <div class="eq-group-head">
+                <% if (gTitle) { %>
+                <h2 class="eq-group-title"><%= gTitle %></h2>
+                <% } %>
+                <% if (gDesc)  { %><p class="eq-group-desc"><%= gDesc %></p><% } %>
+                <% if (gTitle && showCount) { %><span class="eq-group-count"><%= gCount %> 件</span><% } %>
+                <% if (gTip)   { %><p class="eq-group-tip"><%= gTip %></p><% } %>
+            </div>
+            <% } %>
+
+            <% g.subs.forEach(function (sub) { %>
+            <div class="eq-sub">
+
+                <% if (sub.title || sub.description) { %>
+                <div class="eq-sub-head">
+                    <% if (sub.title)       { %><h3 class="eq-sub-title"><%= sub.title %></h3><% } %>
+                    <% if (sub.description) { %><p class="eq-sub-desc"><%= sub.description %></p><% } %>
+                    <% if (sub.link) { %>
+                    <a class="eq-sub-more" href="<%- sub.link %>" title="查看全部「<%= sub.title || '内容' %>」">
+                        <span>more</span><i class="fas fa-plus"></i>
+                    </a>
+                    <% } else { %>
+                    <span class="eq-sub-count"><%= sub.items.length %> 件</span>
+                    <% } %>
+                </div>
+                <% } %>
+
+                <%# 通栏横排只给「没有单价」的入口卡（活动会场）。单件商品
+                   仍走普通网格：一个 6 块钱的年画铺满整行，比留白更怪 %>
+                <% var isWide = sub.items.length === 1 && !sub.items[0].price; %>
+                <div class="eq-grid<%- isWide ? ' eq-grid--single' : '' %>">
+                    <% sub.items.forEach(function (item) {
+                        var ext  = is_ext(item.link);
+                        var href = item.link ? url_for(item.link) : 'javascript:;';
+                        var plat = plat_of(item.platform);
+                        var isGoods = !!plat && plat.cls !== 'other';  /* 只有电商平台走淘宝客版式 */
+                        var tag  = item.tag || item.specification || '';
+                        var text = item.reason || item.description || '';
+
+                        /* ---- 价格：券后价优先，没写就按「现价 - 券额」自动算 ---- */
+                        var coupon = item.coupon != null ? String(item.coupon).trim() : '';
+                        var hasCoupon = coupon !== '' && /^[0-9]/.test(coupon);
+                        var couponNum = hasCoupon ? parseFloat(coupon) : NaN;
+
+                        var priceStr = item.price != null ? String(item.price) : '';
+                        var priceNum = /^[0-9]+(\.[0-9]+)?$/.test(priceStr.trim()) ? parseFloat(priceStr) : NaN;
+
+                        var afterStr = '';
+                        if (item.coupon_price != null && String(item.coupon_price).trim() !== '') {
+                            afterStr = String(item.coupon_price).trim();          /* 手写券后价，原样用 */
+                        } else if (!isNaN(priceNum) && !isNaN(couponNum) && couponNum > 0 && priceNum > couponNum) {
+                            var calc = priceNum - couponNum;                      /* 自动算，整数价不拖小数点 */
+                            afterStr = String(Math.round(calc * 100) / 100);
+                        }
+
+                        /* 主价：有券后价显示券后价，否则退回 price */
+                        var mainPrice = afterStr || priceStr;
+                        var hasP  = mainPrice !== '';
+                        var numP  = hasP && /^[0-9]/.test(mainPrice);
+                        var showAfter = !!afterStr;
+
+                        /* 划线价：写了 original_price 用它；否则用 price 当"券前价" */
+                        var oldPrice = '';
+                        if (item.original_price != null && String(item.original_price).trim() !== '') {
+                            oldPrice = String(item.original_price).trim();
+                        } else if (showAfter && priceStr !== '' && priceStr !== mainPrice) {
+                            oldPrice = priceStr;
+                        }
+
+                        var sales = item.sales ? String(item.sales) : '';
+                        var shop  = item.shop  ? String(item.shop)  : '';
+                        var cta   = item.cta || (hasCoupon ? '领券购买' : '去看看');
+                        var adTxt = (cfg.ecommerce && cfg.ecommerce.ad_text) || '广告';
+                    %>
+                    <a class="eq-card<% if (isGoods) { %> eq-card--goods<% } %>"
+                       href="<%- href %>"
+                       <% if (ext) { %>target="_blank" rel="noopener nofollow<% if (isGoods) { %> sponsored<% } %>"<% } %>
+                       title="<%= item.name %>">
+                        <div class="eq-cover">
+                            <% if (item.image) { %>
+                            <img src="<%- url_for(item.image) %>"
+                                 alt="<%= item.name %>"
+                                 loading="lazy"
+                                 onerror="this.onerror=null;this.src='<%- url_for(eq_cover) %>'">
+                            <% } else { %>
+                            <%# 没有商品图时不留白块：平台色淡底 + 商品图标。
+                               早期这里印的是完整商品名，但标题就在下面一行，同一张卡
+                               同一个名字出现两次，方图下又空出大片色块，所以改成图标 %>
+                            <div class="eq-ph eq-ph--<%= isGoods ? plat.cls : 'other' %>">
+                                <i class="fas <%= isGoods ? 'fa-bag-shopping' : 'fa-arrow-up-right-from-square' %>"></i>
+                            </div>
+                            <% } %>
+                            <% if (tag) { %><span class="eq-tag"><%= tag %></span><% } %>
+                            <%# 广告角标：推广链接必须可识别，位置固定在右上角，不和左侧标签打架 %>
+                            <% if (isGoods && adTxt) { %><span class="eq-ad"><%= adTxt %></span><% } %>
+                        </div>
+                        <div class="eq-body">
+                            <% if (plat) { %>
+                            <span class="eq-plat eq-plat--<%= plat.cls %>"><%= plat.name %></span>
+                            <% } %>
+                            <h4 class="eq-name"><%= item.name %></h4>
+                            <% if (text) { %>
+                            <p class="eq-desc"><%= text %></p>
+                            <% } %>
+                            <% if (isGoods && (sales || shop)) { %>
+                            <div class="eq-meta">
+                                <% if (sales) { %><span class="eq-sales"><%= sales %></span><% } %>
+                                <% if (sales && shop) { %><i class="eq-meta-dot"></i><% } %>
+                                <% if (shop) { %><span class="eq-shop"><%= shop %></span><% } %>
+                            </div>
+                            <% } %>
+                            <% if (hasP) { %>
+                            <div class="eq-buyrow">
+                                <span class="eq-price">
+                                    <% if (showAfter) { %><span class="eq-after">券后</span><% } %>
+                                    <span class="eq-price-now"><% if (numP) { %>¥<% } %><%= mainPrice %></span>
+                                    <% if (oldPrice) { %><span class="eq-price-old">¥<%= oldPrice %></span><% } %>
+                                </span>
+                                <% if (hasCoupon) { %>
+                                <span class="eq-coupon"><i class="fas fa-ticket"></i>券 ¥<%= coupon %></span>
+                                <% } %>
+                            </div>
+                            <% } %>
+                            <% if (isGoods) { %>
+                            <span class="eq-cta"><%= cta %><i class="fas fa-angle-right"></i></span>
+                            <% } else { %>
+                            <%# 官网 / 软件这类不是推广商品，保持原来的小箭头入口 %>
+                            <span class="eq-more">
+                                <%= ext ? txt_web : txt_post %>
+                                <i class="fas fa-angle-right"></i>
+                            </span>
+                            <% } %>
+                        </div>
+                    </a>
+                    <% }); %>
+                </div>
+
+            </div>
+            <% }); %>
+
+        </section>
+        <% }); %>
+
+        <% if (cfg.ecommerce && cfg.ecommerce.disclosure) { %>
+        <p class="eq-disclosure">
+            <i class="fas fa-circle-info"></i>
+            <span>部分链接为电商推广链接。通过它们下单不会多花钱，本站可能获得少量佣金，用于维持服务器开销。</span>
+        </p>
+        <% } %>
+
+    </div><!-- .main-widget -->
+</div>
+
+<% } %>
+
+<%- partial('_partial/footer') %>

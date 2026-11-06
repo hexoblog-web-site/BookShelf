@@ -1,0 +1,164 @@
+<%
+/**
+ * login.ejs ← templates/login.php（1:1 转写）
+ *
+ * 登录/注册/找回密码对话框。表单 DOM 结构与类名完整保留；
+ * 提交依赖 WP 后端接口（api/、inc/ajax.php），静态站不可用。
+ * 是否输出由 users_can_register 控制（对应 get_option('users_can_register')）。
+ */
+var site_name = config.title;
+var privacy_policy_url = vt_get_config('privacy_policy', '');
+var terms_of_service_url = vt_get_config('terms_of_service', '');
+
+/* WP printf(__("By registering/logging in, ...")) */
+function privacyText() {
+  return __('By registering/logging in, you agree to our <a href=\'%s\'>Privacy Policy</a> and <a href=\'%s\'>Terms of Service</a>')
+    .replace('%s', esc_url(url_for(privacy_policy_url)))
+    .replace('%s', esc_url(url_for(terms_of_service_url)));
+}
+%>
+
+<% /* WP footer.php: if (!$current_user->ID) require_once templates/login.php
+   —— 未登录即输出，与注册开关无关；表单提交依赖 WP 后端 */ %>
+<!-- 登录/注册/找回密码对话框 -->
+<div class="vt-dialog login-register-dialog" id="login-register-dialog">
+    <div class="dialog-widget">
+        <a class="close close-button" href="javascript:;">
+            <i class="fa-solid fa-xmark"></i>
+        </a>
+        <div class="dialog-header"></div>
+        <div class="dialog-body">
+            <div class="auth-logo">
+                <% if(vt_get_config('site_logo', '') == ''){ %>
+                    <%= site_name %>
+                <% } else { %>
+                    <img light src="<%- url_for(vt_get_config('site_logo', '')) %>" alt="<%= site_name %>">
+                    <img darkness src="<%- url_for(vt_get_config('site_logo_darkness', '')) %>" alt="<%= site_name %>">
+                <% } %>
+            </div>
+            <div class="auth-tabs">
+                <!-- 登录表单 -->
+                <div class="tab-content active" id="tab-login">
+                    <form id="login-form">
+                        <div class="login-form-group field-text">
+                            <label for="login-username"><%= __('Username or Email'); %></label>
+                            <input type="text" id="login-username" name="username" required>
+                        </div>
+                        <div class="login-form-group field-text">
+                            <label for="login-password"><%= __('Password'); %></label>
+                            <input type="password" id="login-password" name="password" required>
+                        </div>
+                        <div class="login-form-group field-button">
+                            <button type="submit" class="btn primary"><%= __('Login'); %></button>
+                        </div>
+                    </form>
+                    <div class="login-more">
+                        <a href="javascript:;" class="tab-nav" data-tab="forgot"><%= __('Forgot Password?'); %></a>
+                        <a href="javascript:;" class="tab-nav" data-tab="register"><%= __('Register Account'); %></a>
+                    </div>
+                    <div class="login-privacy">
+                        <%- privacyText() %>
+                    </div>
+                </div>
+
+                <!-- 注册表单 -->
+                <div class="tab-content" id="tab-register">
+                    <form id="register-form">
+                        <div class="login-form-group field-text">
+                            <label for="register-username"><%= __('Username'); %></label>
+                            <input type="text" id="register-username" name="username" required>
+                        </div>
+                        <div class="login-form-group field-text">
+                            <label for="register-email"><%= __('Email'); %></label>
+                            <input type="email" id="register-email" name="email" required>
+                        </div>
+                        <div class="login-form-group field-text">
+                            <label for="register-password"><%= __('Password'); %></label>
+                            <input type="password" id="register-password" name="password" required>
+                        </div>
+                        <div class="login-form-group field-text">
+                            <label for="register-verification-code"><%= __('Verification Code'); %></label>
+                            <div class="verification-input-group">
+                                <input type="text" id="register-verification-code" name="verification_code" placeholder="<%= __('Please enter verification code'); %>" maxlength="6" required>
+                                <button type="button" class="btn secondary" id="send-verification-code"><%= __('Send Verification Code'); %></button>
+                            </div>
+                        </div>
+                        <div class="login-form-group field-button">
+                            <button type="submit" class="btn primary"><%= __('Register'); %></button>
+                        </div>
+                    </form>
+                    <div class="login-more">
+                        <a href="javascript:;" class="tab-nav" data-tab="forgot"><%= __('Forgot Password?'); %></a>
+                        <a href="javascript:;" class="tab-nav" data-tab="login"><%= __('Login Account'); %></a>
+                    </div>
+                    <div class="login-privacy">
+                        <%- privacyText() %>
+                    </div>
+                </div>
+
+                <!-- 找回密码表单 -->
+                <div class="tab-content" id="tab-forgot">
+                    <form id="forgot-form-step1">
+                        <div class="login-form-group field-text">
+                            <label for="forgot-email"><%= __('Email'); %></label>
+                            <input type="email" id="forgot-email" name="email" required>
+                        </div>
+                        <div class="login-form-group field-button">
+                            <button type="submit" class="btn primary"><%= __('Send Verification Code'); %></button>
+                        </div>
+                    </form>
+
+                    <form id="forgot-form-step2" style="display:none;">
+                        <div class="login-form-group field-text">
+                            <label for="forgot-code"><%= __('Verification Code'); %></label>
+                            <input type="text" id="forgot-code" name="code" placeholder="<%= __('Please enter the verification code you received'); %>" maxlength="6" required>
+                        </div>
+                        <div class="login-form-group field-text">
+                            <label for="forgot-new-password"><%= __('New Password'); %></label>
+                            <input type="password" id="forgot-new-password" name="new_password" placeholder="<%= __('New Password'); %>" required>
+                        </div>
+                        <div class="login-form-group field-button">
+                            <button type="submit" class="btn primary"><%= __('Reset Password'); %></button>
+                        </div>
+                    </form>
+
+                    <div id="forgot-back" style="display:none; text-align:center; margin-top:15px;">
+                        <a href="javascript:;" onclick="showForgotStep1()"><%= __('← Back to enter email'); %></a>
+                    </div>
+
+                    <div class="login-more">
+                        <a href="javascript:;" class="tab-nav" data-tab="login"><%= __('Login to Account'); %></a>
+                        <a href="javascript:;" class="tab-nav" data-tab="register"><%= __('Register Account'); %></a>
+                    </div>
+                    <div class="login-privacy">
+                        <%- privacyText() %>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 显示第一步：输入邮箱
+    function showForgotStep1() {
+        document.getElementById('forgot-form-step1').style.display = 'block';
+        document.getElementById('forgot-form-step2').style.display = 'none';
+        document.getElementById('forgot-back').style.display = 'none';
+    }
+
+    // 显示第二步：输入验证码和新密码
+    function showForgotStep2() {
+        document.getElementById('forgot-form-step1').style.display = 'none';
+        document.getElementById('forgot-form-step2').style.display = 'block';
+        document.getElementById('forgot-back').style.display = 'block';
+    }
+
+    // 确保在DOM加载完成后初始化对话框
+    document.addEventListener('DOMContentLoaded', function() {
+        // 如果使用模块化JavaScript，这里可以初始化登录对话框
+        if (typeof initLoginDialog === 'function') {
+            initLoginDialog();
+        }
+    });
+</script>

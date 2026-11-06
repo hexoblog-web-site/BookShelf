@@ -1,0 +1,141 @@
+<%
+/**
+ * comments.ejs ← comments.php（1:1 转写）
+ *
+ * 两种模式，由主题 _config.yml 的 comment_provider 决定：
+ *
+ *   twikoo —— 文章页评论区整体交给 twikoo（自建服务，见 twikoo.env_id）。
+ *             原生 WP 风格的表单与列表 DOM 不再输出，避免两套 UI 叠在一起。
+ *   native —— 主题原生结构（WP 转写）：表单能显示但静态站没有后端，
+ *             提交不会保存。保留它只为无 twikoo 时的降级展示。
+ *
+ * 已知限制：原生模式下 WP 评论依赖 admin-ajax / REST 接口，Hexo 静态站无
+ * 后端，评论数据恒为空。
+ */
+var comment_count = 0; // get_comments_number()
+
+/* WP: post_password_required()（密码保护文章未输密码时不加载评论） */
+var password_required = page.password !== undefined && !page.password_unchecked ? false : false;
+
+/* WP: get_option('thread_comments_depth', 3) —— 评论层级，最多支持3级 */
+var depth = parseInt(vt_get_config('thread_comments_depth', 3), 10) || 3;
+
+var twikoo_cfg = vt_get_config('twikoo', {}) || {};
+var comment_provider = vt_get_config('comment_provider', 'native');
+var use_twikoo = comment_provider === 'twikoo' && twikoo_cfg.enable && !!twikoo_cfg.env_id;
+%>
+
+<% if (use_twikoo) { %>
+<%
+/* 传给 twikoo.init 的参数。path 留空则不传，twikoo 默认取 location.pathname，
+   本站文章 URL 形如 /articles/xxxx.html，天然唯一且稳定。 */
+var twikoo_opts = {
+  envId: twikoo_cfg.env_id,
+  el: '#tcomment',
+  lang: twikoo_cfg.lang || 'zh-CN'
+};
+if (twikoo_cfg.path) twikoo_opts.path = twikoo_cfg.path;
+if (twikoo_cfg.visitor) twikoo_opts.visitor = true;
+%>
+<div class="comments-area twikoo-area" id="comments">
+	<div id="tcomment" class="twikoo-container">
+		<div class="twikoo-placeholder">正在加载评论…</div>
+	</div>
+</div>
+
+<script src="<%- url_for(twikoo_cfg.js || '/lib/twikoo/twikoo.min.js') %>"></script>
+<script>
+(function () {
+	var box = document.getElementById('tcomment');
+	if (typeof twikoo === 'undefined') {
+		if (box) box.innerHTML = '<div class="twikoo-placeholder">评论组件加载失败，请刷新重试。</div>';
+		return;
+	}
+	/* init 在 1.6 返回 Promise；老版本可能返回 undefined，故做类型判断 */
+	var p = twikoo.init(<%- JSON.stringify(twikoo_opts) %>);
+	if (p && typeof p.catch === 'function') {
+		p.catch(function (err) {
+			console.error('[twikoo]', err);
+			if (box) box.innerHTML = '<div class="twikoo-placeholder">评论加载失败，请稍后重试。</div>';
+		});
+	}
+})();
+</script>
+
+<% } else { %>
+
+<div class="comments-area">
+	<%
+	/* WP: $_GET['replytocom'] 回复者昵称查询（URL 参数，服务端逻辑，静态站无数据） */
+	var author_name = '';
+	%>
+
+	<% /* comment_form($comments_args) 输出开始 */ %>
+	<div id="respond" class="comment-respond">
+		<h3 id="reply-title" class="comment-reply-title"><%= esc_html(__('Leave a comment')) %></h3>
+		<form action="<%- url_for('/') %>" method="post" id="commentform" class="comment-form">
+			<div class="top-info logged-in-as"><%= esc_html(__('Registration is not required')) %></div>
+
+			<div class="comment-input-widget"><input id="author" class="input-field" name="author" placeholder="<%= esc_attr(__('Nickname')) %>(*)" value=""></input>
+			<input id="email" class="input-field" name="email" placeholder="<%= esc_attr(__('Email')) %>(*)" value=""></input>
+			<input id="url" class="input-field" name="url" placeholder="<%= esc_attr(__('Site URL')) %>" value=""></input></div>
+
+			<div class="comment-form-comment"><textarea id="comment" name="comment" aria-required="true" placeholder="<%= esc_attr(__('Comment Content')) %>"></textarea></div>
+
+			<p class="form-submit"><input name="submit" type="submit" id="comment-submit" class="submit" value="<%= esc_attr(__('Leave a comment')) %>"></p>
+		</form>
+	</div>
+	<% /* comment_form($comments_args) 输出结束 */ %>
+
+
+	<ol class="comment-list">
+		<%
+		/* wp_list_comments(array('avatar_size' => 60, 'style' => 'li',
+		   'short_ping' => true, 'callback' => 'vt_comment'))
+		   静态站无评论数据；vt_comment 回调的 li 输出结构如下
+		   （接入第三方评论系统时按此结构注入）：
+
+		<li class="comment ... parent" id="comment-{id}">
+			<div class="comment-item" id="comment-{id}">
+				<div class="comment-header">
+					<div class="comment-author">
+						<img src="..." alt="" class="avatar" width="60" height="60">
+						<span class="nickname">
+							<a data-url="{url}">{作者}<i class="fa-solid fa-globe"></i></a>（有网站时）
+						</span>
+					</div>
+					<div class="comment-meta">{Y-m-d H:i}</div>
+				</div>
+				<div class="comment-status">您的评论正在等待审核。</div>（待审核时）
+				<div class="comment-content">{评论内容}</div>
+				<div class="comment-actions">
+					<a href="...?replytocom={id}#respond" class="reply-link">回复</a>
+					<a href="javascript:;" class="delete-comment" data-comment-id="{id}" data-nonce="{nonce}">删除</a>（本人评论时）
+				</div>
+			</div>
+			<ul class="children">（子评论）</ul>
+		</li>
+		*/
+		%>
+	</ol>
+
+	<% /* 评论分页码 */ %>
+	<div class="vt-captain-pagination comment-nav-widget">
+    </div>
+</div>
+
+
+<%
+/* 评论层级根据系统设置，最多支持3级，三级以后不显示回复按钮 */
+%>
+<% if ( depth == 2 ) { %>
+	<style>
+	ol.comment-list > li > ul.children .reply-link{ display:none !important; }
+	</style>
+<% } else if ( depth >= 3 ) { %>
+	<style>
+	ol.comment-list > li > ul.children > li > ul.children .reply-link{ display:none !important; }
+	</style>
+<% } %>
+
+<% } %>

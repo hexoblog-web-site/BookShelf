@@ -1,0 +1,38 @@
+<%
+/**
+ * recent-comments.ejs ← inc/widget.php CommentsWidget::widget()（1:1 转写）
+ *
+ * WP: get_comments(array('number' => 5, 'status' => 'approve', 'type' => 'comment'))
+ * 静态站无评论数据，固定输出空列表（结构与类名完整保留）。
+ */
+var title = __('Comments');
+var comments_per_page = 5;
+var comments = [];
+%>
+<div class="recent-comments widget-container">
+    <div class="widget-header">
+        <div class="widget-title"><%= esc_html(title) %></div>
+    </div>
+    <ul class="recent-comments-list">
+        <% if (comments.length) { %>
+            <% comments.forEach(function(comment){ %>
+                <li class="recent-comment-item">
+                    <div class="comment-author">
+                        <img src="<%- esc_url(comment.avatar) %>" alt="<%= esc_attr(comment.author_name) %>" width="32" height="32" />
+                        <div class="comment-author-info">
+                            <span class="comment-author-name"><%= esc_html(comment.author_name) %></span>
+                            <span class="comment-date"><%= esc_html(comment.date_text) %></span>
+                        </div>
+                    </div>
+                    <div class="comment-content">
+                        <a href="<%- esc_url(comment.link) %>">
+                            <%= esc_html(comment.content) %>
+                        </a>
+                    </div>
+                </li>
+            <% }); %>
+        <% } else { %>
+            <li class="no-comments"><%= esc_html(__('No comments')) %></li>
+        <% } %>
+    </ul>
+</div>

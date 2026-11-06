@@ -1,0 +1,116 @@
+<%
+/**
+ * fcircle.ejs —— 朋友圈 / 博友动态页
+ *
+ * 数据来源：hexo-circle-of-friends 风格的 JSON 接口
+ *   { "stats": { friends, active, articles, updated },
+ *     "articles": [{ title, link, author, avatar, date, cover, description }] }
+ *
+ * 默认接口 https://quanzi.liublog.cn/（公共池，收录接入该服务的博友博客）。
+ * 想换成自己的数据，把 _config.yml 的 fcircle.api_url 指向自己的服务即可，
+ * 只要返回同样结构的 fcircle.json，页面不用改。
+ *
+ * 触发方式：source/fcircle/index.md 的 front-matter 写 layout: fcircle
+ * 结构：Banner → 钓鱼（随机抽一篇）→ 统计条 → 卡片列表 → 加载更多
+ *
+ * 开关：fcircle.enable（总开关）、fcircle.random（钓鱼）、fcircle.stats（统计条）
+ * 卡片复用全站 vt-card-item 体系（source/style/src/card.css），
+ * 页面专属样式在 source/style/fcircle-page.css，仅本页加载（见 header.ejs）。
+ */
+var cfg       = vt_get_config('fcircle', {}) || {};
+var fc_on     = cfg.enable !== false;
+var fc_stats  = cfg.stats !== false;
+var fc_bg     = cfg.top_background || '/images/friend-circle.webp';
+var fc_error  = cfg.error_img || '/images/placeholder.svg';
+var fc_api    = cfg.api_url || 'https://quanzi.liublog.cn/';
+var fc_per    = parseInt(cfg.per_page, 10) || 12;
+var fc_random = cfg.random !== false;
+var fc_link   = cfg.bottom_right_link || '/links/';
+%><%- partial('_partial/header') %>
+
+<% if (!fc_on) { %>
+
+<div class="main-container page-fcircle">
+    <div class="main-widget">
+        <div class="fc-off">
+            <i class="fas fa-circle-info"></i>
+            <span>朋友圈功能已关闭，打开主题 <code>_config.yml</code> 里的 <code>fcircle.enable</code> 即可恢复。</span>
+        </div>
+    </div>
+    <div class="sider">
+        <%- partial('_partial/sidebar', {name: 'default-sidebar'}) %>
+    </div>
+</div>
+
+<% } else { %>
+
+<div class="main-container page-fcircle">
+    <div class="main-widget">
+
+        <%# Banner %>
+        <div class="fc-banner" style="background-image:url('<%- url_for(fc_bg) %>')">
+            <div class="fc-banner-inner">
+                <div class="fc-banner-tips"><%= cfg.tips || '订阅友链最新文章' %></div>
+                <h1 class="fc-banner-title"><%= cfg.title || '朋友圈' %></h1>
+                <div class="fc-banner-bottom">
+                    <span class="fc-banner-label"><%= cfg.bottom_left || '友链' %></span>
+                    <a class="fc-banner-btn" href="<%- url_for(fc_link) %>">
+                        <i class="fas fa-circle-arrow-right"></i>
+                        <span><%= cfg.bottom_right || '友情链接' %></span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <%
+        /* 钓鱼：从全部文章里随机抽一篇，纯前端行为，关掉后不渲染这块 */
+        if (fc_random) {
+        %>
+        <div class="fc-fishing">
+            <div class="fc-fishing-head">
+                <div class="fc-fishing-left">
+                    <h2>钓鱼</h2>
+                    <button class="fc-fishing-btn" id="fc-random-btn" type="button" title="换一篇">
+                        <i class="fas fa-rotate-right"></i>
+                    </button>
+                </div>
+                <a class="fc-fishing-all" href="<%- url_for(fc_link) %>">全部友链</a>
+            </div>
+            <div id="fc-random"><span class="fc-random-text">正在钓鱼…</span></div>
+        </div>
+        <% } %>
+
+        <% /* 统计条：fcircle.stats 关掉后连容器一起不输出，脚本会自动跳过 */ %>
+        <% if (fc_stats) { %>
+        <div class="fc-stats" id="fc-stats"></div>
+        <% } %>
+
+        <%# 卡片列表 %>
+        <div class="media-list vt-column vt-column-2" id="fc-list"></div>
+
+        <div class="fc-loading" id="fc-loading">加载中…</div>
+
+        <div class="fc-more-wrap">
+            <button class="fc-more" id="fc-more" type="button" style="display:none">加载更多</button>
+        </div>
+
+    </div><!-- .main-widget -->
+
+    <div class="sider">
+        <%- partial('_partial/sidebar', {name: 'default-sidebar'}) %>
+    </div>
+</div>
+
+<script>
+window.FCIRCLE_CONFIG = <%- JSON.stringify({
+    api_url: fc_api,
+    per_page: fc_per,
+    random: fc_random,
+    error_img: url_for(fc_error)
+}) %>;
+</script>
+<script src="<%- url_for('/js/fcircle.js') %>?v=<%= config.asset_version || '1' %>"></script>
+
+<% } %>
+
+<%- partial('_partial/footer') %>

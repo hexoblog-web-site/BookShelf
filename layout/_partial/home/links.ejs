@@ -1,0 +1,38 @@
+<%
+/**
+ * links.ejs ← templates/home/links.php（1:1 转写）
+ *
+ * WP: get_bookmarks(array('orderby' => 'rating', 'order' => 'DESC', 'limit' => -1))
+ * Hexo: 链接数据来自 _config.yml links_data（字段对应
+ * link_url/link_name/link_description/link_image/link_target）。
+ */
+var links = vt_get_config('links_data', []);
+%>
+
+<div class="main-container links">
+    <div class="home-header">
+        <%- vt_section_title(vt_get_config('links_title', ''), vt_get_config('links_icon', '')) %>
+    </div>
+    <div class="links-widget">
+        <% if (links.length) { %>
+            <% links.forEach(function(link){ %>
+            <div class="link-item">
+                <%
+                var link_target = link.target ? 'target="' + esc_attr(link.target) + '"' : '';
+                %>
+                <a href="<%- esc_url(link.url) %>" <%= link_target %> rel="nofollow">
+                </a>
+                <% if (link.image) { %>
+                    <img src="<%- esc_url(url_for(link.image)) %>" alt="<%= esc_attr(link.name) %>">
+                <% } else { %>
+                    <img src="<%- esc_url(url_for('/images/link.png')) %>" alt="<%= esc_attr(link.name) %>">
+                <% } %>
+                <div class="link-body">
+                    <div class="link-title"><%= esc_html(link.name) %></div>
+                    <div class="link-description"><%= esc_html(link.description) %></div>
+                </div>
+            </div>
+            <% }); %>
+        <% } %>
+    </div>
+</div>

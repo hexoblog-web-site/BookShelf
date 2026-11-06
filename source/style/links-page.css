@@ -1,0 +1,432 @@
+/**
+ * links-page.css —— 友情链接页（Butterfly flink 版式）
+ *
+ * 对应 DOM：layout/links.ejs
+ * 来源：Butterfly 5.7.0 的 source/css/_page/flink.styl，逐条搬过来后
+ *      把 stylus 的变量/混入换成本站的 CSS 变量，其余尺寸、动效原样保留：
+ *        · 卡片三列、84px 高、10px 圆角（栅格换成 grid，见下方 .flink-list）
+ *        · 悬停时左侧头像「收进去」（width:0 + margin-left:-12px），
+ *          名字和描述顺势铺满整行 —— 这是 Butterfly 友链的招牌动效
+ *        · 悬停底色由 ::before 从 scale(0) 放大到 scale(1)，不用改 background
+ *
+ * 与 Butterfly 原版的差异：卡片内部改成 flex（头像 + 文字列），
+ * 标题与简介的间距由 gap 控制，不再用 padding + 固定高度硬撑，
+ * 避免两块内容叠加超过 90px 把卡片顶破。
+ *
+ * 只在友链页加载（header.ejs 里按 page.layout === 'links' 判断），
+ * 所以选择器统一挂在 .page-flink 下，不会影响首页那个 .links 板块。
+ * ============================================================ */
+
+/* ===== 顶部 Banner =====
+   版式与朋友圈页（fcircle-page.css 的 .fc-banner）保持一致：
+   背景图 + 深色渐变遮罩 + 左上小字/大标题 + 左下统计/右下胶囊按钮。
+   选择器统一挂在 .page-flink 下，不影响其它页面的 .fc-banner。 */
+.page-flink .lk-banner {
+    position: relative;
+    height: 260px;
+    margin: 0 0 18px;
+    border-radius: var(--vt-border-radius);
+    overflow: hidden;
+    background-color: var(--vt-bg-color-grey);
+    background-position: center 58%;
+    background-size: cover;
+    background-repeat: no-repeat;
+    box-shadow: 0 6px 20px var(--vt-shadow-color);
+}
+
+/* 遮罩：上方压暗保证小字可读，左侧再压一层，让标题落在深色区 */
+.page-flink .lk-banner::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(180deg, rgba(0, 0, 0, .28) 0%, rgba(0, 0, 0, .62) 100%),
+        linear-gradient(90deg, rgba(0, 0, 0, .45) 0%, rgba(0, 0, 0, 0) 62%);
+}
+
+.page-flink .lk-banner-inner {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 26px 30px;
+    box-sizing: border-box;
+    color: #fff;
+}
+
+.page-flink .lk-banner-tips {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: .14em;
+    opacity: .85;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, .5);
+}
+
+.page-flink .lk-banner-title {
+    margin: 10px 0 0;
+    padding: 0;
+    font-size: 30px;
+    line-height: 1.25;
+    font-weight: 600;
+    letter-spacing: .5px;
+    color: #fff;
+    border: 0;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, .45);
+}
+
+.page-flink .lk-banner-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: auto;
+}
+
+.page-flink .lk-banner-label {
+    font-size: 14px;
+    opacity: .9;
+}
+
+.page-flink .lk-banner-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .18);
+    color: #fff;
+    font-size: 13px;
+    text-decoration: none;
+    backdrop-filter: blur(8px);
+    transition: background .25s ease, transform .25s ease;
+}
+
+.page-flink .lk-banner-btn:hover {
+    background: rgba(255, 255, 255, .32);
+    color: #fff;
+    transform: translateX(2px);
+}
+
+.page-flink .lk-banner-btn i {
+    font-size: 13px;
+}
+
+@media screen and (max-width: 1024px) {
+    .page-flink .lk-banner {
+        height: 220px;
+    }
+}
+
+@media screen and (max-width: 600px) {
+    .page-flink .lk-banner {
+        height: 180px;
+        margin-bottom: 14px;
+    }
+
+    .page-flink .lk-banner-inner {
+        padding: 16px 18px;
+    }
+
+    .page-flink .lk-banner-title {
+        font-size: 24px;
+    }
+
+    .page-flink .lk-banner-label {
+        font-size: 12px;
+    }
+
+    .page-flink .lk-banner-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+}
+
+/* ===== 容器 =====
+   页面级排版变量：字号、字距、次级文字色都在这里，改一处即整页统一。
+   次级灰在浅色下用 #7b7b7b（对白底 4.6:1，13px 也够读），暗色下提到 #a1a1a1。 */
+.page-flink {
+    --flink-name-size: 16px;
+    --flink-name-tracking: .3px;
+    --flink-desc-size: 13.5px;
+    --flink-desc-tracking: .2px;
+    --flink-name-color: var(--vt-text-color);
+    /* #7b7b7b 对白卡 4.3:1，压在 AA 线上；#666 约 5.7:1，一句话简介才读得清 */
+    --flink-desc-color: #666;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body.dark-mode .page-flink {
+    --flink-name-color: #e3e3e3;
+    --flink-desc-color: #a1a1a1;
+}
+
+@media (prefers-color-scheme: dark) {
+    body.dark-mode-auto .page-flink {
+        --flink-name-color: #e3e3e3;
+        --flink-desc-color: #a1a1a1;
+    }
+}
+
+.page-flink .flink {
+    margin-bottom: 20px;
+    padding: 0 10px 10px;
+}
+
+/* ===== 分组标题：左侧一竖条色标 + 18px 半粗字 ===== */
+.page-flink .flink-name {
+    position: relative;
+    margin: 24px 0 8px;
+    padding: 0 0 0 12px;
+    font-size: 18px;
+    line-height: 1.4;
+    font-weight: 600;
+    letter-spacing: .5px;
+    color: var(--flink-name-color);
+    border: 0;
+}
+
+.page-flink .flink-name::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 3px;
+    height: 15px;
+    margin-top: -7.5px;
+    border-radius: 2px;
+    background: var(--vt-color-primary);
+}
+
+/* 标题自带的锚点链接（鼠标滑过才显形），沿用主题正文 .headerlink 的思路 */
+.page-flink .flink-name .headerlink {
+    float: right;
+    margin-right: 4px;
+    opacity: 0;
+    font-size: 0.8em;
+    color: var(--vt-text-color-grey);
+    transition: opacity 0.3s;
+}
+
+.page-flink .flink-name .headerlink::before {
+    content: '\f0c1';
+    font-family: 'Font Awesome 6 Free', 'Font Awesome 5 Free', sans-serif;
+    font-weight: 900;
+}
+
+.page-flink .flink-name:hover .headerlink {
+    opacity: 1;
+}
+
+.page-flink .flink-desc {
+    margin: 0 0 12px;
+    font-size: 13px;
+    line-height: 1.7;
+    letter-spacing: .2px;
+    color: var(--flink-desc-color);
+}
+
+/* ===== 列表：栅格 N 列 =====
+   Butterfly 原版用 float + calc(100%/3 - 15px)，在宽度不是「恰好整除」时
+   会少排一个（本站侧栏占位后剩 ~600px，实测只排进 2 个）。
+   这里换成 grid，列数由 --flink-columns 决定，天然不会算错，
+   也不会有 float 高度不齐导致的「卡住」问题。 */
+.page-flink .flink-list {
+    display: grid;
+    grid-template-columns: repeat(var(--flink-columns, 3), minmax(0, 1fr));
+    gap: 15px;
+    padding: 10px 10px 0;
+    align-items: stretch;
+}
+
+.page-flink .flink-list > .flink-list-item {
+    position: relative;
+    overflow: hidden;
+    /* 84 = 头像 60 + 上下各 12，比原版 90 更紧凑，42 张卡少滑一屏 */
+    height: 84px;
+    line-height: 1.4;
+    text-align: left;
+    background-color: var(--vt-bg-color-card);
+    border: 1px solid var(--vt-border-color);
+    border-radius: 10px;
+    /* 建立独立层叠上下文，让 ::before 的底色稳定压在内容下面 */
+    isolation: isolate;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+/* 悬停底色：scale(0) → scale(1) 扩散 */
+.page-flink .flink-list > .flink-list-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: -1;
+    background: var(--vt-bg-color-hover);
+    transform: scale(0);
+    transition: transform 0.3s ease-out;
+}
+
+.page-flink .flink-list > .flink-list-item:hover,
+.page-flink .flink-list > .flink-list-item:focus-within {
+    border-color: var(--vt-color-primary);
+    box-shadow: 0 4px 12px -3px var(--vt-shadow-color);
+}
+
+.page-flink .flink-list > .flink-list-item:hover::before,
+.page-flink .flink-list > .flink-list-item:focus-within::before {
+    transform: scale(1);
+}
+
+/* 整块可点：左头像 + 右文字两列，纵向居中
+   文字列再拆成「标题 / 简介」两行，间距由 flex 的 gap 控制，
+   不再用 padding + 固定高度硬撑 —— 那样会把 90px 的卡片顶破 */
+.page-flink .flink-list-item > a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    height: 100%;
+    padding: 0 12px;
+    box-sizing: border-box;
+    color: var(--vt-text-color);
+    text-decoration: none;
+}
+
+/* ===== 头像：悬停时收进去 ===== */
+.page-flink .flink-list-item .flink-item-icon {
+    flex: 0 0 auto;
+    overflow: hidden;
+    margin: 0;
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    background: var(--vt-bg-color-grey);
+    transition: width 0.3s ease-out, margin-left 0.3s ease-out;
+}
+
+.page-flink .flink-list-item .flink-item-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s;
+}
+
+.page-flink .flink-list-item:hover .flink-item-icon,
+.page-flink .flink-list-item:focus-within .flink-item-icon {
+    /* 负外边距抵消 flex 的 12px 间距，头像收完文字正好贴到左内边距 */
+    margin-left: -12px;
+    width: 0;
+}
+
+/* ===== 名称与描述：一律单行截断 ===== */
+.page-flink .flink-item-text {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    min-width: 0;
+}
+
+.page-flink .flink-item-name {
+    padding: 0;
+    font-size: var(--flink-name-size);
+    line-height: 1.4;
+    font-weight: 600;
+    letter-spacing: var(--flink-name-tracking);
+    color: var(--flink-name-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.3s;
+}
+
+.page-flink .flink-list-item:hover .flink-item-name {
+    color: var(--vt-color-primary);
+}
+
+.page-flink .flink-item-desc {
+    padding: 0;
+    margin: 0;
+    font-size: var(--flink-desc-size);
+    line-height: 1.55;
+    letter-spacing: var(--flink-desc-tracking);
+    color: var(--flink-desc-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ===== 没有数据时的占位 ===== */
+.page-flink .flink-empty {
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--vt-text-color-grey);
+}
+
+.page-flink .flink-empty i {
+    font-size: 42px;
+    opacity: 0.35;
+}
+
+.page-flink .flink-empty p {
+    margin: 12px 0 0;
+}
+
+.page-flink .flink-empty-tip {
+    font-size: 12px;
+}
+
+.page-flink .flink-empty code {
+    padding: 2px 5px;
+    border-radius: 4px;
+    background: var(--vt-bg-color-grey);
+    color: var(--vt-color-primary);
+}
+
+/* ===== 页面正文（友链后面的说明文字） ===== */
+.page-flink .flink-content {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px dashed var(--vt-border-color);
+    font-size: 14px;
+    line-height: 1.9;
+    letter-spacing: .2px;
+    color: var(--flink-desc-color);
+}
+
+/* ============================================================
+ * 响应式：沿用 Butterfly 的 1024 / 600 两个断点
+ * ============================================================ */
+@media screen and (max-width: 1024px) {
+    .page-flink .flink-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media screen and (max-width: 600px) {
+    .page-flink .flink {
+        padding: 0 4px 8px;
+    }
+
+    .page-flink .flink-list {
+        padding: 6px 4px 0;
+    }
+
+    .page-flink .flink-list {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* 尊重「减少动效」偏好：去掉缩放与收图标的动画，只留颜色变化 */
+@media (prefers-reduced-motion: reduce) {
+    .page-flink .flink-list > .flink-list-item::before,
+    .page-flink .flink-list-item .flink-item-icon,
+    .page-flink .flink-list-item .flink-item-icon img {
+        transition: none;
+    }
+}

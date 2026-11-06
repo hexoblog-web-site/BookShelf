@@ -1,0 +1,414 @@
+/**
+ * user-card.css —— 文章页侧栏「站长名片」
+ *
+ * 对应 DOM：layout/_partial/widgets/user-widget.ejs（widgetId: user-widget）
+ *          .card-widget.card-info
+ *            > .card-info-bg            背景图（绝对定位，顶部 95px）
+ *            > .author-avatar           头像（80px 圆，跨在背景下沿）
+ *            > .author-info-name        昵称（白色，压在背景图上）
+ *            > .author-info-desc        一句话签名
+ *            > .blog-info               三项统计（横排）
+ *            > .card-btns               两个按钮（48% 分栏）
+ *
+ * 来源：原版 mirage 主题 source/css/widget.css 中的「个人卡片」段，
+ * 其注释写明「参考南方嘉木布局」。这里按 1:1 搬运，只补三处：
+ *   ① 认证徽章的兜底画法 —— 原版只支持配一张图片，这里没配图时
+ *      用 Font Awesome 勾号 + 主色圆画一个，省掉图片资源；
+ *   ② 深色模式 —— 原版 dark.css 没有针对卡片的覆盖，靠 CSS 变量
+ *      自动适配，但背景图会被全局 img 滤镜压暗，需要还原；
+ *   ③ 窄屏 —— 侧栏宽度小于 320px 时收紧字号与位置。
+ *
+ * 原版采用绝对定位布局（height: 200px + top/left 硬编码），改文字
+ * 长度不会撑开卡片，这点保留；如果日后要加字段，请同步调整高度。
+ * ============================================================ */
+
+/* ===== 卡片外框 ===== */
+.card-info {
+    position: relative;
+    height: 200px;
+    overflow: hidden;
+    background: var(--vt-bg-color-card, #fff);
+    border-radius: 8px;
+    box-shadow: 0 0 3px 0 var(--vt-shadow-color, rgba(0, 0, 0, 0.073));
+}
+
+/* ===== 背景图 ===== */
+.card-info .card-info-bg {
+    height: 95px;
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: hidden;
+}
+
+.card-info .card-info-bg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+/* ===== 头像 ===== */
+.card-info .author-avatar {
+    width: 80px;
+    height: 80px;
+    position: relative;
+    top: 25px;
+    left: 10px;
+    background: var(--vt-bg-color-card);
+    border: 3px solid var(--vt-bg-color-card);
+    border-radius: 50%;
+    z-index: 1;
+    box-sizing: border-box;
+}
+
+.card-info .author-avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+}
+
+/* ===== 认证徽章：头像右下角 ===== */
+.card-info .author-avatar.has-certification::before {
+    content: '\f00c'; /* Font Awesome check */
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 23px;
+    height: 23px;
+    border-radius: 50%;
+    border: 3px solid var(--vt-bg-color-card);
+    box-sizing: border-box;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--vt-color-primary);
+    color: #ffffff;
+    font-family: 'Font Awesome 6 Free', 'Font Awesome 5 Free', sans-serif;
+    font-weight: 900;
+    font-size: 9px;
+    line-height: 1;
+}
+
+/* 配了 certification 图片时，模板会额外输出 background-image，
+   CSS 这边把内容清空，让图片自己显示 */
+.card-info .author-avatar.has-certification.cert-image::before {
+    content: '';
+    background-size: 100% 100%;
+    background-color: transparent;
+}
+
+/* ===== 昵称：压在背景图上 ===== */
+.card-info .author-info-name {
+    font-size: 24px;
+    line-height: 35px;
+    color: #fff;
+    text-shadow: 0 0 2px rgba(0, 0, 0, 0.7);
+    font-weight: 700;
+    position: absolute;
+    top: 55px;
+    left: 50px;
+    right: 0;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ===== 一句话签名 ===== */
+.card-info .author-info-desc {
+    font-size: 15px;
+    line-height: 24px;
+    color: var(--vt-text-color-grey);
+    position: absolute;
+    top: 120px;
+    left: 20px;
+    right: 20px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ===== 三项统计 ===== */
+.card-info .blog-info {
+    position: absolute;
+    top: 98px;
+    left: 90px;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.card-info .blog-info a {
+    display: flex;
+    align-items: baseline;
+    text-decoration: none;
+}
+
+.card-info .blog-info .blog-info-num {
+    font-size: 14px;
+    line-height: 18px;
+    color: var(--vt-text-color);
+}
+
+.card-info .blog-info .blog-info-headline {
+    font-size: 14px;
+    line-height: 18px;
+    margin-left: 2px;
+    color: var(--vt-text-color-grey);
+}
+
+/* ===== 底部按钮：48% 分栏，左实心右描边 ===== */
+.card-info .card-btns {
+    position: absolute;
+    top: 150px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-info .card-btns .btn-follow {
+    width: 48%;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--vt-color-primary);
+    color: #fff;
+    border-radius: 5px;
+    font-size: 14px;
+    text-decoration: none;
+}
+
+.card-info .card-btns .btn-follow:hover {
+    opacity: 0.85;
+}
+
+.card-info .card-btns .btn-email {
+    width: 48%;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--vt-color-primary);
+    color: var(--vt-color-primary);
+    border-radius: 5px;
+    font-size: 14px;
+    text-decoration: none;
+}
+
+.card-info .card-btns .btn-email:hover {
+    background-color: var(--vt-color-primary);
+    color: #fff;
+}
+
+.card-info .card-btns .btn-follow span,
+.card-info .card-btns .btn-email span {
+    margin-left: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ============================================================
+ * 右上角社交区：竖排三点 + 点开才出现的圆形图标
+ * 照搬参考站点 .author-info-social / .social-icons / .more-info 三条规则：
+ *   - 外层绝对定位贴右上（right:10px / top:10px），flex 横排；
+ *   - 所有圆形按钮 30px、白 36% 半透明 + 12px 背景模糊，压在背景图上；
+ *   - .social-icons 里的 a 默认 opacity:0 + pointer-events:none，
+ *     加 .show 才淡入 —— 位置靠 flex 自然向左生长，不占位不留空。
+ * 三点用 CSS 画的圆点（box-shadow 复制上下两枚），
+ * 因为主题自带 Font Awesome Free 里没有 ellipsis 这个字形。
+ * ============================================================ */
+.card-info .author-info-social {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.card-info .author-info-social .social-icons {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* 圆形按钮：社交图标 + 三点共用一套外观
+   参考站点是 30px / gap 5px，那是 4 个图标的宽度；本站 sns_items 有 5 个，
+   照抄会向左顶到头像上，所以统一收到 28px / gap 4px，正好停在头像右缘。 */
+.card-info .author-info-social .social-icons a,
+.card-info .author-info-social .more-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.36);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    color: #fff;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 0.3s, opacity 0.25s ease, transform 0.25s ease;
+}
+
+.card-info .author-info-social .social-icons a:hover,
+.card-info .author-info-social .more-info:hover,
+.card-info .author-info-social .more-info.active {
+    background: rgba(255, 255, 255, 0.62);
+}
+
+.card-info .author-info-social .social-icons a img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+}
+
+/* 收起态 */
+.card-info .author-info-social .social-icons a {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(10px);
+}
+
+/* 展开态（脚本给 .social-icons 加 .show） */
+.card-info .author-info-social .social-icons.show a {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateX(0);
+}
+
+/* 三点：一枚实心圆 + 上下各复制一枚 */
+.card-info .author-info-social .more-info-dots {
+    display: block;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 -6px 0 currentColor, 0 6px 0 currentColor;
+}
+
+/* 没配背景图时，白色半透明圆在浅色卡片上会糊掉，换成浅灰底 + 深色图标 */
+.card-info.no-bg .author-info-social .social-icons a,
+.card-info.no-bg .author-info-social .more-info {
+    background: var(--vt-bg-color-grey, rgba(0, 0, 0, 0.06));
+    color: var(--vt-text-color);
+}
+
+.card-info.no-bg .author-info-social .more-info.active {
+    background: var(--vt-color-primary);
+    color: #fff;
+}
+
+/* ============================================================
+ * 深色模式
+ * style.css 有全局 body.dark-mode img { filter: brightness(70%) }，
+ * 会把背景图压暗；名片这里还原，其余颜色靠 CSS 变量自动适配。
+ * ============================================================ */
+body.dark-mode .card-info .card-info-bg img,
+body.dark-mode .card-info .author-avatar img {
+    filter: none;
+}
+
+@media (prefers-color-scheme: dark) {
+    body.dark-mode-auto .card-info .card-info-bg img,
+    body.dark-mode-auto .card-info .author-avatar img {
+        filter: none;
+    }
+}
+
+/* ===== 窄屏：侧栏更窄时收紧字号与位置 ===== */
+@media screen and (max-width: 768px) {
+    .card-info .author-avatar {
+        width: 72px;
+        height: 72px;
+        top: 30px;
+        left: 12px;
+    }
+
+    .card-info .author-info-name {
+        font-size: 19px;
+        line-height: 28px;
+        top: 60px;
+        left: 46px;
+    }
+
+    .card-info .author-info-desc {
+        font-size: 13px;
+        line-height: 20px;
+        top: 118px;
+        left: 14px;
+        right: 14px;
+    }
+
+    .card-info .blog-info {
+        left: 78px;
+        gap: 10px;
+    }
+
+    .card-info .blog-info .blog-info-num,
+    .card-info .blog-info .blog-info-headline {
+        font-size: 12px;
+    }
+
+    .card-info .card-btns {
+        left: 14px;
+        right: 14px;
+        gap: 10px;
+    }
+
+    .card-info .card-btns .btn-follow,
+    .card-info .card-btns .btn-email {
+        width: auto;
+        flex: 1 1 0;
+        font-size: 13px;
+    }
+
+    /* 窄屏：侧栏更窄，社交圆钮再缩一档，保证 5 个图标也不压到头像 */
+    .card-info .author-info-social {
+        top: 8px;
+        right: 8px;
+        gap: 3px;
+    }
+
+    .card-info .author-info-social .social-icons {
+        gap: 3px;
+    }
+
+    .card-info .author-info-social .social-icons a,
+    .card-info .author-info-social .more-info {
+        width: 24px;
+        height: 24px;
+        font-size: 11px;
+    }
+
+    .card-info .author-info-social .more-info-dots {
+        width: 3px;
+        height: 3px;
+        box-shadow: 0 -5px 0 currentColor, 0 5px 0 currentColor;
+    }
+}
+
+/* 尊重「减少动效」偏好 */
+@media (prefers-reduced-motion: reduce) {
+    .card-info .card-btns .btn-follow,
+    .card-info .card-btns .btn-email,
+    .card-info .author-info-social .social-icons a {
+        transition: none;
+    }
+}

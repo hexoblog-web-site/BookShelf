@@ -1,0 +1,452 @@
+<%
+/**
+ * about.ejs —— 关于页（数据驱动 · 书卷气卡片版）
+ *
+ * 触发方式：source/about/index.md 的 front-matter 写 layout: about
+ * 生效地址：/about/
+ * 数据来源：source/_data/about.yml（全部内容都在那里，改文案不用动模板）
+ *
+ * 页面结构：
+ *   1. 标题栏（叶子图标 + 标题 + 一句话副标题）
+ *   2. 个人名片（圆形头像 + 四角浮签 + 名字 + 简介）
+ *   3. 关于我（段落 + 结尾签名）
+ *   4. 十年之约（起算日 / 进度条 / 已完成 / 进度 / 剩余时间 / 里程碑）
+ *   5. 建站历程（左侧竖轴时间线，按日期倒序）
+ *   6. 站点数据（文章 / 分类 / 标签 / 运行天数，auto 取真实统计）
+ *   7. 关于读者 + 联系与足迹
+ *
+ * 十年之约与运行天数由页面底部的小脚本按当天重算，不必为数字重新 generate。
+ * 样式：source/style/about-page.css（仅本页加载，见 header.ejs）
+ * 开关：主题 _config.yml 的 about.enable
+ */
+var cfg      = vt_get_config('about', {}) || {};
+var about_on = cfg.enable !== false;
+
+var d     = (site.data && site.data.about) || {};
+var prof  = d.profile || {};
+var story = d.story || {};
+var ten   = d.ten_years || {};
+var tl    = d.timeline || {};
+var st    = d.stats || {};
+var rd    = d.reader || {};
+var ct    = d.contact || {};
+var sec   = d.sections || {};
+
+var heroTitle = d.title || page.title || '关于';
+var heroSub   = d.subtitle || '';
+
+/* 内容单源：把 about.yml 的标题与摘要回填给页面本身。
+ * seo.ejs 输出的 <title>、meta description 以及本页 og / JSON-LD
+ * 都读 page.title / page.description，所以改 yml 就够了，
+ * 不用再去 source/about/index.md 同步一遍。 */
+if (d.title) page.title = d.title;
+if (d.description) page.description = d.description;
+var avatar    = prof.avatar || '/images/avatar.jpg';
+var tags      = Array.isArray(prof.tags) ? prof.tags : [];
+
+/* ---- 图标：yml 里写 aboutDoc / mail 这类名字，这里换成 Font Awesome ---- */
+var FA = {
+    aboutBook: 'book-open', aboutSprout: 'seedling', aboutCode: 'code', aboutPen: 'pen-nib',
+    aboutLeaf: 'leaf', aboutUser: 'user', aboutBox: 'box-archive', aboutChart: 'chart-simple',
+    aboutSmile: 'face-smile', aboutDoc: 'file-lines', aboutFolder: 'folder', aboutTag: 'tag',
+    aboutCalendar: 'calendar-days', mail: 'envelope', feed: 'rss', rss: 'rss',
+    linksLeaf: 'link', github: 'github'
+};
+function icon(name) {
+    var n = FA[name] || name || 'seedling';
+    var brand = (n === 'github');
+    return '<i class="' + (brand ? 'fa-brands' : 'fa-solid') + ' fa-' + n + '"></i>';
+}
+var tagIcons = ['aboutBook', 'aboutSprout', 'aboutCode', 'aboutPen'];
+var tagCls   = ['ztj-float-tag-1', 'ztj-float-tag-2', 'ztj-float-tag-3', 'ztj-float-tag-4'];
+
+/* ---- 日期计算：十年之约 ---- */
+function parseD(v) {
+    if (v instanceof Date) return v;
+    var m = String(v || '').match(/(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+    return m ? new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10)) : null;
+}
+/* 统一成原生 Date：兼容 yml 字符串、YAML 日期、Hexo 文章里的 moment 对象 */
+function toDate(v) {
+    if (!v) return null;
+    if (v instanceof Date) return v;
+    if (typeof v.toDate === 'function') return v.toDate();
+    return parseD(v);
+}
+function spanYMD(a, b) {
+    var y = b.getFullYear() - a.getFullYear();
+    var mo = b.getMonth() - a.getMonth();
+    if (b.getDate() < a.getDate()) mo -= 1;
+    if (mo < 0) { y -= 1; mo += 12; }
+    return { y: y, m: mo };
+}
+var now = new Date();
+/* 起算日只配一处：about.yml 的 ten_years.start（含 years 跨度）。
+ * 没写时依次回退：主题 _config.yml 的 about.start_date（旧版兼容）
+ *   → 站内最早的一篇文章 → 今天。
+ * 目标日一律按「起算日 + years」推算，不再需要单独维护 target。 */
+var themeStart = cfg.start_date || '';
+var spanYears  = parseInt(ten.years, 10) > 0
+    ? parseInt(ten.years, 10)
+    : (parseInt(cfg.years, 10) > 0 ? parseInt(cfg.years, 10) : 10);
+var firstPost  = site.posts.length ? site.posts.sort('date').first() : null;
+var dStart  = toDate(ten.start) || toDate(themeStart) || toDate(theme.statistics && theme.statistics.start_date) || (firstPost ? toDate(firstPost.date) : null) || now;
+var dTarget = new Date(dStart.getFullYear() + spanYears, dStart.getMonth(), dStart.getDate());
+var passed  = spanYMD(dStart, now);
+var totalSp = spanYMD(dStart, dTarget);
+var passedText = passed.y + ' 年 ' + passed.m + ' 个月';
+/* 剩余按总月数相减，避免「10年0月 - 1年3月」被算错 */
+var leftMonths = Math.max(0, (totalSp.y * 12 + totalSp.m) - (passed.y * 12 + passed.m));
+var leftText = Math.floor(leftMonths / 12) + ' 年 ' + (leftMonths % 12) + ' 个月';
+var spanMs  = dTarget.getTime() - dStart.getTime();
+var percent = spanMs > 0 ? Math.min(100, Math.max(0, Math.round((now.getTime() - dStart.getTime()) / spanMs * 100))) : 0;
+var runDays = Math.max(0, Math.floor((now.getTime() - dStart.getTime()) / 86400000));
+var startStr = dStart.getFullYear() + '-' + ('0' + (dStart.getMonth() + 1)).slice(-2) + '-' + ('0' + dStart.getDate()).slice(-2);
+var targetStr = dTarget.getFullYear() + '-' + ('0' + (dTarget.getMonth() + 1)).slice(-2) + '-' + ('0' + dTarget.getDate()).slice(-2);
+
+/* ---- 站点数据：auto 取真实统计，否则用 yml 里的值 ---- */
+var autoMap = {
+    posts: site.posts.length,
+    categories: site.categories.length,
+    tags: site.tags.length,
+    days: runDays
+};
+var statItems = (Array.isArray(st.items) ? st.items : []).map(function (it) {
+    var v = it.auto && autoMap[it.auto] !== undefined ? autoMap[it.auto] : it.value;
+    var extra = it.auto === 'days' ? ' data-days-start="' + startStr + '"' : '';
+    return { label: it.label, value: v, unit: it.unit || '', icon: it.icon || 'aboutDoc', extra: extra };
+});
+
+/* ---- 建站历程：按日期倒序 ---- */
+var tlItems = (Array.isArray(tl.items) ? tl.items : []).slice().sort(function (a, b) {
+    return String(b.date).localeCompare(String(a.date));
+});
+
+/* ---- 里程碑：四位年份到点自动点亮，不用手写 is_done ---- */
+var curYear = now.getFullYear();
+var miles = (Array.isArray(ten.milestones) ? ten.milestones : []).map(function (m, i) {
+    var txt = String(m.text == null ? '' : m.text).trim();
+    var ell = !!(m.is_ellipsis || txt === '…');
+    var yr = /^\d{4}$/.test(txt) ? parseInt(txt, 10) : null;
+    var done;
+    if (ell) done = false;
+    else if (m.is_done === true || m.is_done === false) done = m.is_done;
+    else if (yr) done = yr <= curYear;
+    else done = i === 0;   /* 「启程」这类非年份节点默认已点亮 */
+    return { text: m.text, ellipsis: ell, done: done, year: yr };
+});
+%><%- partial('_partial/header') %>
+
+<div class="main-container page-about">
+    <div class="main-widget">
+
+        <% if (!about_on) { %>
+
+        <div class="ztj-about-page">
+            <div class="ztj-about-wrap">
+                <article class="ztj-section ztj-card">
+                    <div class="ztj-off">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>关于页已关闭，打开主题 <code>_config.yml</code> 里的 <code>about.enable</code> 即可恢复。</span>
+                    </div>
+                </article>
+            </div>
+        </div>
+
+        <% } else { %>
+
+        <main class="ztj-about-page">
+            <section class="ztj-about-wrap">
+
+                <%# ===== 1. 标题栏 ===== %>
+                <header class="ztj-titlebar ztj-card" id="top">
+                    <div class="ztj-titlebar-left">
+                        <div class="ztj-titlebar-icon" aria-hidden="true"><%- icon('aboutLeaf') %></div>
+                        <div class="ztj-titlebar-copy">
+                            <h1><%= heroTitle %></h1>
+                            <% if (heroSub) { %><p><%= heroSub %></p><% } %>
+                        </div>
+                    </div>
+                </header>
+
+                <%# ===== 2. 个人名片 ===== %>
+                <article class="ztj-profile ztj-card">
+                    <div class="ztj-avatar-zone">
+                        <% tags.forEach(function (t, i) { if (i === 0 || i === 1) { %>
+                        <span class="ztj-float-tag <%= tagCls[i] %>"><%- icon(tagIcons[i]) %><%= t %></span>
+                        <% } }); %>
+
+                        <div class="ztj-avatar">
+                            <div class="ztj-avatar-inner">
+                                <img src="<%- url_for(avatar) %>" alt="<%= prof.name || config.author %>" loading="lazy">
+                            </div>
+                        </div>
+
+                        <% tags.forEach(function (t, i) { if (i === 2 || i === 3) { %>
+                        <span class="ztj-float-tag <%= tagCls[i] %>"><%- icon(tagIcons[i]) %><%= t %></span>
+                        <% } }); %>
+                    </div>
+
+                    <div class="ztj-profile-content">
+                        <h2><%= prof.name || config.author || config.title %></h2>
+                        <% if (prof.desc) { %><p><%= prof.desc %></p><% } %>
+                    </div>
+                </article>
+
+                <%# ===== 3. 关于我 ===== %>
+                <% if (story.paragraphs && story.paragraphs.length) { %>
+                <article class="ztj-section ztj-card ztj-story">
+                    <div class="ztj-section-head">
+                        <%- icon('aboutUser') %>
+                        <h2 id="story"><%= story.title || '关于我' %></h2>
+                    </div>
+                    <% story.paragraphs.forEach(function (p, i) { %><p<% if (i === 0) { %> class="ztj-lead"<% } %>><%= p %></p><% }); %>
+                    <% if (story.sign) { %><p class="ztj-story-sign">——— <%= story.sign %></p><% } %>
+                </article>
+                <% } %>
+
+                <%# ===== 3.5 站内导览（六个栏目的内链） ===== %>
+                <% if (sec.items && sec.items.length) { %>
+                <article class="ztj-section ztj-card ztj-sections">
+                    <div class="ztj-section-head">
+                        <%- icon('aboutBox') %>
+                        <h2 id="explore"><%= sec.title || '站内怎么逛' %></h2>
+                        <% if (sec.subtitle) { %><span class="ztj-section-sub"><%= sec.subtitle %></span><% } %>
+                    </div>
+                    <div class="ztj-section-grid">
+                        <% sec.items.forEach(function (s) { %>
+                        <a class="ztj-nav-card" href="<%- url_for(s.url || '/') %>">
+                            <span class="ztj-nav-icon"><%- icon(s.icon || 'aboutLeaf') %></span>
+                            <span class="ztj-nav-body">
+                                <strong><%= s.name %></strong>
+                                <span><%= s.desc %></span>
+                            </span>
+                        </a>
+                        <% }); %>
+                    </div>
+                </article>
+                <% } %>
+
+                <%# ===== 4. 十年之约 ===== %>
+                <% if (ten.title !== false) { %>
+                <article class="ztj-section ztj-card" data-ten-start="<%= startStr %>" data-ten-target="<%= targetStr %>">
+                    <div class="ztj-section-head">
+                        <%- icon('aboutPen') %>
+                        <h2 id="ten-years"><%= ten.title || '十年之约' %></h2>
+                        <% if (ten.subtitle) { %><span><%= ten.subtitle %></span><% } %>
+                    </div>
+                    <div class="ztj-ten-body">
+                        <div class="ztj-ten-row">
+                            <div class="ztj-ten-date"><span>开始日期</span><strong><%= startStr %></strong></div>
+                            <div>
+                                <div class="ztj-progress-title">
+                                    十年之约进度
+                                    <span class="ztj-progress-badge">已同行 <b data-ten="passed"><%= passedText %></b></span>
+                                </div>
+                                <div class="ztj-progress" role="progressbar" aria-label="十年之约进度 <%= percent %>%">
+                                    <i data-ten="bar" style="width:<%= percent %>%"></i>
+                                </div>
+                            </div>
+                            <div class="ztj-ten-date"><span>目标日期</span><strong><%= targetStr %></strong></div>
+                        </div>
+
+                        <div class="ztj-ten-stat">
+                            <div class="ztj-ten-stat-item"><span>已完成</span><strong data-ten="passed"><%= passedText %></strong></div>
+                            <div class="ztj-ten-stat-item"><span>进度</span><strong data-ten="percent"><%= percent %>%</strong></div>
+                            <div class="ztj-ten-stat-item"><span>剩余时间</span><strong data-ten="left"><%= leftText %></strong></div>
+                        </div>
+
+                        <% if (miles.length) { %>
+                        <div class="ztj-milestone">
+                            <% miles.forEach(function (m) { %>
+                            <div class="ztj-milestone-item <%= m.ellipsis ? 'is-ellipsis' : (m.done ? 'is-done' : '') %>"<%- m.year ? ' data-year="' + m.year + '"' : '' %>>
+                                <div class="ztj-milestone-dot"></div><%= m.text %>
+                            </div>
+                            <% }); %>
+                        </div>
+                        <% } %>
+
+                        <% if (ten.quote) { %><div class="ztj-ten-quote">“ <%= ten.quote %> ”</div><% } %>
+                    </div>
+                </article>
+                <% } %>
+
+                <%# ===== 5. 建站历程 ===== %>
+                <% if (tlItems.length) { %>
+                <article class="ztj-section ztj-card mx_timeline_card">
+                    <div class="ztj-section-head">
+                        <%- icon('aboutBox') %>
+                        <h2 id="timeline"><%= tl.title || '建站历程' %></h2>
+                    </div>
+                    <div class="mx_timeline">
+                        <% tlItems.forEach(function (it) { %>
+                        <div class="mx_timeline_item">
+                            <span class="mx_timeline_dot" aria-hidden="true"></span>
+                            <div class="mx_timeline_time"><%= it.date %></div>
+                            <div class="mx_timeline_content"><%= it.text %></div>
+                        </div>
+                        <% }); %>
+                    </div>
+                </article>
+                <% } %>
+
+                <%# ===== 6. 站点数据 / 关于读者 ===== %>
+                <section class="ztj-grid">
+
+                    <% if (statItems.length) { %>
+                    <article class="ztj-section ztj-card">
+                        <div class="ztj-section-head">
+                            <%- icon('aboutChart') %>
+                            <h2 id="stats"><%= st.title || '站点数据' %></h2>
+                        </div>
+                        <div class="ztj-stats-grid">
+                            <% statItems.forEach(function (it) { %>
+                            <div class="ztj-stat-box">
+                                <div class="ztj-stat-icon"><%- icon(it.icon) %></div>
+                                <div class="ztj-stat-text">
+                                    <span><%= it.label %></span><strong<%- it.extra %>><%= it.value %></strong><em><%= it.unit %></em>
+                                </div>
+                            </div>
+                            <% }); %>
+                        </div>
+                    </article>
+                    <% } %>
+
+                    <% if (rd.paragraphs && rd.paragraphs.length) { %>
+                    <article class="ztj-section ztj-card ztj-about-site">
+                        <div class="ztj-section-head">
+                            <%- icon('aboutSmile') %>
+                            <h2 id="reader"><%= rd.title || '关于读者' %></h2>
+                        </div>
+                        <% rd.paragraphs.forEach(function (p) { %><p><%= p %></p><% }); %>
+                    </article>
+                    <% } %>
+
+                </section>
+
+                <%# ===== 7. 联系与足迹 ===== %>
+                <% if (ct.items && ct.items.length) { %>
+                <article class="ztj-contact ztj-card">
+                    <div class="ztj-section-head">
+                        <%- icon('aboutSprout') %>
+                        <h2 id="contact"><%= ct.title || '联系与足迹' %></h2>
+                    </div>
+                    <div class="ztj-contact-grid">
+                        <% ct.items.forEach(function (c) { %>
+                        <% var out = /^(https?:)?\/\//.test(String(c.url || '')) || c.target === '_blank'; %>
+                        <a class="ztj-contact-item" href="<%- url_for(c.url || '/') %>"<% if (out) { %> target="_blank" rel="nofollow noopener"<% } %>>
+                            <span class="ztj-contact-icon"><%- icon(c.icon || 'aboutSprout') %></span>
+                            <span class="ztj-contact-text"><strong><%= c.name %></strong><span><%= c.desc %></span></span>
+                        </a>
+                        <% }); %>
+                    </div>
+                </article>
+                <% } %>
+
+            </section>
+
+            <% /* 回到顶部：滚动过一屏才出现（放在 .ztj-about-page 内才能继承本页配色变量） */ %>
+            <button type="button" class="ztj-to-top" aria-label="回到顶部" hidden>
+                <i class="fa-solid fa-arrow-up" aria-hidden="true"></i>
+            </button>
+        </main>
+        <script>
+        (function () {
+            var btn = document.querySelector('.ztj-to-top');
+            if (!btn) return;
+            function sync() {
+                var show = (window.pageYOffset || document.documentElement.scrollTop) > window.innerHeight;
+                btn.hidden = !show;
+                btn.classList.toggle('is-on', show);
+            }
+            window.addEventListener('scroll', sync, { passive: true });
+            sync();
+            btn.addEventListener('click', function () {
+                var top = document.getElementById('top');
+                if (top && top.scrollIntoView) {
+                    top.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            });
+        })();
+        </script>
+
+        <% /* 十年之约 / 运行天数：按打开页面的当天重算，跨零点自动刷新 */ %>
+        <script>
+        (function () {
+            var DAY = 86400000;
+            function parseD(v) {
+                var m = String(v || '').match(/(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+                return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+            }
+            function spanYMD(a, b) {
+                var y = b.getFullYear() - a.getFullYear(), mo = b.getMonth() - a.getMonth();
+                if (b.getDate() < a.getDate()) mo -= 1;
+                if (mo < 0) { y -= 1; mo += 12; }
+                return { y: y, m: mo };
+            }
+            function each(list, fn) { for (var i = 0; i < list.length; i++) fn(list[i]); }
+
+            function paint() {
+                var now = new Date();
+
+                each(document.querySelectorAll('[data-days-start]'), function (el) {
+                    var s = parseD(el.getAttribute('data-days-start'));
+                    if (s) el.textContent = Math.max(0, Math.floor((now - s) / DAY));
+                });
+
+                each(document.querySelectorAll('[data-ten-start]'), function (node) {
+                    var s = parseD(node.getAttribute('data-ten-start'));
+                    var t = parseD(node.getAttribute('data-ten-target'));
+                    if (!s || !t || t <= s) return;
+                    var passed = spanYMD(s, now), total = spanYMD(s, t);
+                    var passedText = passed.y + ' 年 ' + passed.m + ' 个月';
+                    var leftMonths = Math.max(0, (total.y * 12 + total.m) - (passed.y * 12 + passed.m));
+                    var leftText = Math.floor(leftMonths / 12) + ' 年 ' + (leftMonths % 12) + ' 个月';
+                    var percent = Math.min(100, Math.max(0, Math.round((now - s) / (t - s) * 100)));
+                    each(node.querySelectorAll('[data-ten]'), function (el) {
+                        var k = el.getAttribute('data-ten');
+                        if (k === 'passed') el.textContent = passedText;
+                        else if (k === 'left') el.textContent = leftText;
+                        else if (k === 'percent') el.textContent = percent + '%';
+                        else if (k === 'bar') el.style.width = percent + '%';
+                    });
+                    var bar = node.querySelector('.ztj-progress');
+                    if (bar) bar.setAttribute('aria-label', '十年之约进度 ' + percent + '%');
+                });
+
+                /* 里程碑：四位年份到点自动点亮，跨年也不用重新生成 */
+                each(document.querySelectorAll('.ztj-milestone-item[data-year]'), function (el) {
+                    el.classList.toggle('is-done', +el.getAttribute('data-year') <= now.getFullYear());
+                });
+            }
+
+            paint();
+            (function tick() {
+                var now = new Date();
+                var ms = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 2) - now;
+                setTimeout(function () { paint(); tick(); }, ms);
+            })();
+
+            /* 后台标签页的定时器会被浏览器节流，切回来 / 从缓存恢复时补算一次 */
+            document.addEventListener('visibilitychange', function () {
+                if (!document.hidden) paint();
+            });
+            window.addEventListener('pageshow', paint);
+        })();
+        </script>
+
+        <% } %>
+
+    </div><!-- .main-widget -->
+
+    <% /* 右侧栏：站长名片 + 与首页/归档页同一套小工具（主题 _config.yml 的 sidebar.default-sidebar）
+          名片与文章页共用 _partial/widgets/user-widget，内容/开关全在 _config.yml 的 user_card 段 */ %>
+    <div class="sider">
+        <%- partial('_partial/widgets/user-widget') %>
+        <%- partial('_partial/sidebar', {name: 'default-sidebar'}) %>
+    </div>
+</div>
+
+<%- partial('_partial/footer') %>

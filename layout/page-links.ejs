@@ -1,0 +1,121 @@
+<%
+/**
+ * page-links.ejs ← page-links.php（Template Name: Links，1:1 转写）
+ *
+ * 使用方式：Markdown front-matter 中写 layout: page-links
+ * 链接数据来自 _config.yml links_data（对应 WP 链接管理器的
+ * link_url/link_name/link_description/link_image/link_target 与
+ * 链接分类），分组数据见下方 links_groups 配置约定。
+ */
+
+/* get_header() */
+%><%- partial('_partial/header') %><%
+
+var vt_config = vt_get_config();
+
+// 获取所有链接分类（WP: get_categories(taxonomy=link_category)）
+// Hexo: _config.yml links_groups 数组，每项 {name, links: [...]}
+var link_categories = vt_get_config('links_groups', []);
+
+// 全宽显示
+var full_width = page.full_width;
+var full_width_attribute = full_width ? 'full-width' : '';
+%>
+
+<div class="main-container page-link" <%= full_width_attribute %> >
+    <div class="main-widget">
+        <div class="article-widget">
+            <h1 class="page-title">
+                <%= page.title %>
+
+                <% /* WP: current_user_can('manage_options') 管理员编辑链接（无后端，保留结构）
+                <a href="..." class="page-edit-action">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>编辑</span>
+                </a>
+                */ %>
+            </div>
+
+            <% if (link_categories.length) { %>
+                <% link_categories.forEach(function(category){ %>
+                    <%
+                    // 如果该分类下有链接才显示
+                    var cat_links = category.links || [];
+                    if (!cat_links.length) return; // continue
+                    %>
+                    <div class="links-widget">
+                        <%
+                        var uncat_text = __('Uncategorized');
+                        if (category.name !== 'Uncategorized' && category.name !== uncat_text) { %>
+                            <div class="widget-title"><%= esc_html(category.name) %></div>
+                        <% } %>
+
+                        <div class="link-items">
+                            <% cat_links.forEach(function(link){ %>
+                            <div class="link-item">
+                                <%
+                                var link_target_attr = '';
+                                if (link.target) {
+                                    link_target_attr = 'target="' + esc_attr(link.target) + '"';
+                                }
+                                %>
+                                <a href="<%- esc_url(link.url) %>" <%= link_target_attr %> rel="nofollow">
+                                </a>
+                                <% if (link.image) { %>
+                                    <img src="<%- esc_url(url_for(link.image)) %>" alt="<%= esc_attr(link.name) %>">
+                                <% } else { %>
+                                    <img src="<%- esc_url(url_for('/images/link.png')) %>" alt="<%= esc_attr(link.name) %>">
+                                <% } %>
+                                <div class="link-body">
+                                    <div class="link-title"><%= esc_html(link.name) %></div>
+                                    <div class="link-description"><%= esc_html(link.description) %></div>
+                                </div>
+                            </div>
+                            <% }); %>
+                        </div>
+                    </div>
+                <% }); %>
+            <% } else {
+                // 如果没有分类，显示所有链接
+                var all_links = vt_get_config('links_data', []);
+                %>
+                <div class="links-widget">
+                    <% if (all_links.length) { %>
+                        <% all_links.forEach(function(link){ %>
+                        <div class="link-item">
+                            <%
+                            var link_target_attr = '';
+                            if (link.target) {
+                                link_target_attr = 'target="' + esc_attr(link.target) + '"';
+                            }
+                            %>
+                            <a href="<%- esc_url(link.url) %>" <%= link_target_attr %> rel="nofollow">
+                            </a>
+                            <% if (link.image) { %>
+                                <img src="<%- esc_url(url_for(link.image)) %>" alt="<%= esc_attr(link.name) %>">
+                            <% } else { %>
+                                <img src="<%- esc_url(url_for('/images/link.png')) %>" alt="<%= esc_attr(link.name) %>">
+                            <% } %>
+                            <div class="link-body">
+                                <div class="link-title"><%= esc_html(link.name) %></div>
+                                <div class="link-description"><%= esc_html(link.description) %></div>
+                            </div>
+                        </div>
+                        <% }); %>
+                    <% } %>
+                </div>
+            <% } %>
+        </div>
+    </div><!-- .main-widget -->
+
+    <% if(!full_width){ %>
+        <div class="sider">
+            <%- partial('_partial/sidebar', {name: 'default-sidebar'}) %>
+
+            <%- vt_theme_ad('ad_sidebar') %>
+        </div>
+    <% } %>
+</div>
+
+<% /* get_footer() */ %>
+<%- partial('_partial/footer') %>

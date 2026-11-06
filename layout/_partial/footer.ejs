@@ -1,0 +1,158 @@
+<%
+/**
+ * footer.ejs ← footer.php（1:1 转写）
+ *
+ * WP 的 wp_footer() 中输出 setting.php enqueue 的脚本与
+ * vt_print_ajax_var() 注入的 ajax_object、wp_localize_script 的
+ * i18n 对象，均在下方按原顺序转写。
+ */
+
+var footer_bg_type = vt_get_config('footer_bg_type', 'light') == 'darkness' ? 'darkness' : 'light';
+var sns_items = vt_get_config('sns_items', []);
+var footer_links = vt_get_config('footer_links', []);
+var footer_copyright = vt_get_config('footer_copyright', '');
+var page_data_type = vt_get_config('page_data_type', 0);
+var footer_js = vt_get_config('footer_js', '');
+
+/* WP: $current_theme->get('Version') —— 主题版本 */
+var version = '3.12.0';
+%>
+
+
+<footer class="footer" <%= footer_bg_type %> >
+
+    <% if(vt_get_config('sns_items') && sns_items.length){ %>
+        <div class="footer-sns">
+            <% sns_items.forEach(function(v){ %>
+                <%
+                var link    = esc_url(v['link'] || '');
+                var title   = esc_attr(v['title'] || '');
+                var img_src = esc_url(v['image'] || '');
+                %>
+                <a href="<%= link %>" target="_blank" rel="nofollow" title="<%= title %>">
+                    <img src="<%- url_for(img_src) %>" alt="">
+                </a>
+            <% }); %>
+        </div>
+    <% } %>
+
+    <% if( vt_get_config('footer_links') && footer_links.length ){ %>
+        <div class="footer-links">
+            <% footer_links.forEach(function(v){ %>
+                <%
+                var link  = esc_url(v['link'] || '');
+                var text  = esc_html(v['title'] || '');
+                %>
+                <a href="<%= link %>" target="_blank" rel="nofollow"><%= text %></a>
+            <% }); %>
+        </div>
+    <% } %>
+
+    <div class="footer-container">
+        <%- footer_copyright %>
+        <span>
+            基于 <a href="https://www.liublog.cn" copyright target="_blank" rel="noopener">BookShelf</a> 主题（源自 Mirage / vtheme）
+        </span>
+        <% /* WP get_num_queries()/timer_stop() 为数据库查询统计，静态生成器无查询，恒为 0 */ %>
+        <% if(page_data_type == 1){ %>
+            <span><%= __('Query Count') %>:0  </span>
+            <span><%= __('Execution Time') %>:0 </span>
+        <% } else if(page_data_type == 2){ %>
+            <script> console.log('<%= esc_js(__('Query Count') +':'+ 0 +' '+__('Execution Time') +':'+ 0) %>') </script>
+        <% } %>
+    </div>
+</footer>
+
+
+<% /* require_once(THEME_DIR . "/templates/bar.php") */ %>
+<%- partial('_partial/bar') %>
+
+<% /*
+ * WP: if (!$current_user->ID) —— 未登录时输出登录对话框。
+ * 静态站没有用户系统，这里默认不渲染：
+ *   1) 这 164 行 DOM 会出现在全部 947 个页面上，而表单没有提交后端；
+ *   2) 里面「隐私声明」指向 /privacy/（页面不存在）、「服务条款」指向
+ *      /#terms_of_service（首页无此锚点），等于每页挂两条死链。
+ * 需要时在主题 _config.yml 里打开 login.enable。
+ * index.js 里对 .login-register-dialog 的查询都带空值判断，关掉不会报错。
+ */ %>
+<% var _login_cfg = vt_get_config('login', {}) || {}; %>
+<% if (_login_cfg.enable) { %>
+<%- partial('_partial/login') %>
+<% } %>
+
+
+<% /* wp_footer() —— setting.php vt_custom_js_and_css() 中 wp_enqueue_script 的脚本 */ %>
+<script type="text/javascript" src="<%- url_for('/lib/swiper/swiper-bundle.min.js') %>"></script>
+<script type="text/javascript" src="<%- url_for('/lib/qrcode.js') %>"></script>
+<script type="text/javascript" src="<%- url_for('/lib/html2canvas.js') %>"></script>
+
+<% /* wp_localize_script('bookshelf', 'i18n', vt_get_translations_cached()) */ %>
+<script>
+var i18n = <%- JSON.stringify({
+  loading: __('Loading...'),
+  operation_failed: __('Operation Failed'),
+  remove_star: __('Remove Star'),
+  star: __('Star'),
+  please_log_in: __('Please log in'),
+  no_comments: __('No comments'),
+  one_comment: __('One comment'),
+  multiple_comments: __('comments'),
+  submitting: __('Submitting...'),
+  submit_failed: __('Submit failed'),
+  confirm_delete_comment: __('Are you sure you want to delete this comment?'),
+  deleting: __('Deleting...'),
+  delete_success: __('Comment deleted successfully'),
+  delete_failed: __('Delete failed'),
+  reply_to_comment: __('Reply to comment...'),
+  submit_reply: __('Submit Reply'),
+  cancel: __('Cancel'),
+  please_enter_reply: __('Please enter reply content'),
+  submitting_reply: __('Submitting...'),
+  comment_form_not_found: __('Comment form not found'),
+  awaiting_moderation: __('Your comment is awaiting moderation.'),
+  reply: __('Reply'),
+  delete: __('Delete'),
+  comment_cannot_be_empty: __('Comment cannot be empty.'),
+  comment_max_length: __('Comment cannot exceed %d characters.')
+}) %>;
+</script>
+
+<script type="text/javascript" src="<%- url_for('/js/index.js') %>?v=<%= config.asset_version || '1' %>"></script>
+
+<% /* functions.php vt_print_ajax_var()（wp_footer 钩子）：
+   仅文章/页面详情页输出完整对象，首页列表输出空对象 */ %>
+<% if (is_post() || is_page()) { %>
+<script type="text/javascript">var ajax_object = <%= JSON.stringify({
+  ajax_url: '',
+  nonce: '',
+  submit_nonce: '',
+  wp_rest_nonce: '',
+  current_user_id: 0
+}) %>;</script>
+<% } else { %>
+<script type="text/javascript">var ajax_object = {};</script>
+<% } %>
+
+<% /* footer_js 允许JS，仅配置可控；若想严格限制改为注释下面一行，不输出 */ %>
+<%- footer_js %>
+
+<% /* BookShelf-Box：点赞 + 全站统计。放在页脚，首页 / 归档 / 标签页也会加载，
+       统计才能覆盖全站；点赞按钮仍然只在文章页出现。 */ %>
+<% var sb_zan = vt_get_config('zan', {}) || {}; %>
+<% if (sb_zan.enable && sb_zan.server) { %>
+<script src="<%- sb_zan.js || (sb_zan.server + '/api/js/zan.js') %>" data-server="<%- sb_zan.server %>"<% if (sb_zan.once === false) { %> data-once="false"<% } %> defer></script>
+<% } %>
+
+<% /* 列表卡片的评论数：问 twikoo 要。只支持自建服务（env_id 是 http 地址），
+       腾讯云开发环境那种「环境 ID」形式取不到计数端点，直接不加载。 */ %>
+<% var sb_tw = vt_get_config('twikoo', {}) || {}; %>
+<% if (sb_tw.enable && /^https?:\/\//i.test(sb_tw.env_id || '')) { %>
+<script src="<%- url_for('/js/comment-count.js') %>?v=<%= config.asset_version || '1' %>" data-twikoo="<%- sb_tw.env_id %>" defer></script>
+<% } %>
+
+<%_ /* 自定义注入（bottom）：主题 _config.yml 的 inject.bottom。
+       放在所有主题脚本之后，DOM 已就绪，脚本可直接操作页面元素。 */ _%>
+<%- vt_inject('bottom') %>
+</body>
+</html>

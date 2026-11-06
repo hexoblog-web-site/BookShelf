@@ -1,0 +1,120 @@
+<%
+/**
+ * card.ejs ← templates/card.php（1:1 转写）
+ *
+ * WP 中依赖全局 $post；Hexo 调用方式：
+ *   partial('_partial/card', {post: p})（经 partial 函数传参）
+ *
+ * 数据映射说明（静态生成器与 WP 的差异，DOM 结构完全一致）：
+ *  - the_permalink()        → post.permalink
+ *  - 特色图片               → post.cover / post.banner（front-matter）
+ *  - get_comments_number()  → Hexo 无评论数据，恒为 0
+ *  - is_sticky()            → post.sticky（front-matter sticky: true）
+ */
+var item = typeof post !== 'undefined' ? post : page;
+var target = false ? 'target="_blank"' : '';
+var avatar = vt_get_custom_avatar_url();
+var post_id = item._id || item.slug || '';
+
+// 获取主题URL常量
+var theme_url = url_for('/');
+
+// 缩略图：特色图片 → default（WP 自动回退缩略图逻辑已移除，与原主题一致）
+var has_thumbnail = !!(item.cover || item.banner);
+var thumbnail_url = item.cover || item.banner || '';
+var placeholder_url = url_for('/images/placeholder.svg');
+%>
+<div class="vt-card-item">
+    <div class="vt-card-thumbnail">
+        <a href="<%- url_for(item.path) %>" <%= target %> >
+            <% if (has_thumbnail) { %>
+                <img class="lazyload-img"
+                     data-src="<%- url_for(thumbnail_url) %>"
+                     src="<%- url_for(placeholder_url) %>"
+                     alt="<%= item.title || '' %>" />
+            <% } else { %>
+                <img src="<%- url_for('/images/default.jpg') %>" alt="<%= item.title || '' %>" />
+            <% } %>
+            <div class="vt-card-badget-widget">
+                <% if(item.sticky){ %>
+                    <div class="vt-card-badget sticky"><%= __('Sticky') %></div>
+                <% } %>
+                <% /* <div class="vt-card-badget vip">VIP</div> */ %>
+            </div>
+        </a>
+    </div>
+    <div class="vt-card-body">
+        <h3 class="vt-card-title">
+            <a href="<%- url_for(item.path) %>" title="<%= item.title || '' %>" <%= target %>>
+                <%= item.title %>
+            </a>
+        </h3>
+
+        <div class="vt-card-excerpt">
+            <%= vt_clean_the_excerpt(vt_get_the_excerpt(item)) %>
+        </div>
+
+        <div class="vt-card-meta no-scrollbar">
+            <%
+            var card_categories = item.categories || [];
+            if (card_categories && card_categories.length) {
+            %>
+                <% card_categories.forEach(function(category){ %>
+                    <a href="<%- url_for(category.path) %>" class="vt-card-tag vt-category">
+                        <i class="fas fa-folder"></i>
+                        <%= category.name %>
+                    </a>
+                <% }); %>
+            <% } %>
+
+            <%
+            var card_tags = item.tags || [];
+            if (card_tags && card_tags.length) {
+            %>
+                <% card_tags.forEach(function(tag){ %>
+                    <% /* 标签前不再放 <i class="fas fa-tags">：图标是 CSS 伪元素画的字形，
+                            对抓取毫无价值，反而给正文抽取添噪声；胶囊底色本身已经能区分标签 */ %>
+                    <a href="<%- url_for(tag.path) %>" class="vt-card-tag">
+                        <%= tag.name %>
+                    </a>
+                <% }); %>
+            <% } %>
+        </div>
+
+        <div class="vt-card-footer">
+
+            <% /* WP: home_url('/user/' . $post->post_author) —— 用户主页为 WP 后端路由 */ %>
+            <a class="vt-card-author" href="javascript:;">
+                <div class="avatar"><img src="<%- url_for(avatar) %>" alt=""></div>
+                <span><%= item.author || config.author || '' %></span>
+            </a>
+
+            <div class="vt-card-time"  data-time="<%= date(item.date, 'YYYY-MM-DD HH:mm:ss') %>">
+                <i class="fas fa-clock"></i>
+                <%= vt_get_time(date(item.date, 'YYYY-MM-DD HH:mm:ss')) %>
+            </div>
+            <div class="vt-card-stats">
+                <% /* 阅读数：构建时只能拿到 front-matter 的静态值（通常 0），
+                       这里挂上 data-zan-view + data-zan-key 指向文章路径，
+                       由 zan.js 批量查询真实次数并回填 .zan-view-count。
+                       容器里已有内容，zan.js 不会重建结构，只覆盖数字。 */ %>
+                <span class="vt-user-post-stat-item" data-zan-view data-zan-key="<%- url_for(item.path) %>" data-zan-label="">
+                    <i class="fas fa-eye"></i>
+                    <span class="zan-view-count"><%= vt_format_view_count(get_post_views(item)) %></span>
+                </span>
+                <% /* 点赞数：列表里只读，scope 不是 content 且带 data-zan-read，
+                       zan.js 不会绑点击，只用一次批量查询把数字填进 [data-zan-count]。 */ %>
+                <span class="vt-user-post-stat-item" data-zan data-zan-read data-zan-key="<%- url_for(item.path) %>">
+                    <i class="fas fa-heart"></i>
+                    <span data-zan-count>0</span>
+                </span>
+                <% /* 评论数：twikoo 的 GET_COMMENTS_COUNT 支持一次问多个地址，
+                       由 /js/comment-count.js 汇总批量取回并填进 .vt-comment-count。 */ %>
+                <span class="vt-user-post-stat-item" data-vt-comment data-path="<%- url_for(item.path) %>">
+                    <i class="fas fa-comment"></i>
+                    <span class="vt-comment-count">0</span>
+                </span>
+            </div>
+        </div>
+    </div>
+</div>

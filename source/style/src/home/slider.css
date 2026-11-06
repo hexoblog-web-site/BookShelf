@@ -1,0 +1,197 @@
+/**
+ * top
+ */
+.main-container.top{
+
+}
+.main-container.top .main-widget{
+  
+}
+
+@media only screen and (min-width:900px) {
+  .main-container.top .main-widget{
+    display: flex;
+    justify-content: flex-start;
+    width: 1200px;
+  }
+  .main-container.top .swiper{
+    width: 880px;
+    height: 400px;
+    flex: 0 0 auto;
+  }
+  /*  .main-container.top .top-hot-widget{
+    width: 400px;
+    flex: 0 0 400px;
+    margin:0 0 0 20px;
+    position: relative;
+  }*/
+}
+
+
+/******************************************************************************
+ * 幻灯样式
+ */
+.swiper-container {
+  width: 100%;
+  height: 50vw;
+  overflow: hidden;
+  box-sizing: border-box;
+  margin: 0px auto;
+  overflow: hidden;
+  border-radius: var(--vt-border-radius);
+}
+
+.swiper-container .swiper-slide {
+  background: var(--vt-bg-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.swiper-container .swiper-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+}
+.slider-title {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  color: #fff;
+  padding: 30px 20px;
+  height: 95px;
+  box-sizing: border-box;
+  text-align: left;
+  font-size: 20px;
+  background-image:linear-gradient(-180deg,transparent 13%,rgba(0,0,0,.35) 97%);
+  overflow: hidden;
+  text-overflow:ellipsis;
+  white-space: nowrap;
+}
+.dark-mode .slider-title { color: #b9b9b9; }
+.swiper-container .swiper-pagination {
+  text-align: left;
+  box-sizing: border-box;
+  padding: 0 20px;
+}
+.swiper-container .swiper-pagination-bullet {
+  width: 10px;
+  height: 6px;
+  background-color: var(--vt-color-primary);
+  border-radius: 3px;
+}
+
+.swiper-container .swiper-pagination-bullet-active {
+  width: 20px;
+  background-color: var(--vt-color-primary);
+}
+
+.swiper-container .swiper-button-next,
+.swiper-container .swiper-button-prev {
+  visibility: hidden;
+  opacity: 0;
+  display: flex;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.3);
+  left: 20px;
+  transition: opacity 0.2s ease-in-out;
+  z-index: 99;
+}
+.swiper-container .swiper-button-next::after,
+.swiper-container .swiper-button-prev::after {
+  color: #fff;
+  font-size: 14px;
+}
+.swiper-container .swiper-button-next.swiper-button-disabled,
+.swiper-container .swiper-button-prev.swiper-button-disabled {
+  opacity: 0.3;
+  pointer-events: auto;
+}
+
+.swiper-container .swiper-button-next {
+  left: auto;
+  right: 20px;
+}
+
+.swiper-container:hover .swiper-button-next,
+.swiper-container:hover .swiper-button-prev {
+  visibility: visible;
+}
+.swiper-container:hover .swiper-button-next:not(.swiper-button-disabled),
+.swiper-container:hover .swiper-button-prev:not(.swiper-button-disabled) {
+  opacity: 1;
+}
+
+
+
+
+/******************************************************************************
+ * 
+ */
+.hot-img-widget{
+  box-sizing: border-box;
+  margin: 8px 0 0 0;
+  margin-right: -8px;
+  display: flex;
+  justify-content: flex-start;
+}
+.hot-img-widget .item{
+  display: block;
+  width: calc(50% - 8px);
+  margin: 0 8px 0 0;
+  aspect-ratio: 1 / 0.6;
+  position: relative;
+  border-radius: var(--vt-border-radius);
+  overflow: hidden;
+}
+.hot-img-widget .item img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.hot-img-widget .item .title{
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  box-sizing: border-box;
+  height: 50px;
+  width: 100%;
+  font-size: 15px;
+  color: var(--vt-text-color-inverse);
+  overflow: hidden;
+  text-overflow:ellipsis;
+  white-space: nowrap;
+  padding: 0 12px;
+  line-height: 60px;
+  background-image:linear-gradient(-180deg,transparent 13%,rgba(0,0,0,.35) 97%);
+}
+.dark-mode .hot-img-widget .title { color: #b9b9b9; }
+
+@media only screen and (min-width:900px) {
+  .main-container.top .hot-img-widget{
+    width: 300px;
+    flex: 0 0 300px;
+    margin:0 0 0 20px;
+    position: relative;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .hot-img-widget .item{
+    width: 100%;
+    height: 190px;
+    aspect-ratio: 1 / 0.1;
+  }
+
+
+
+}
+
+
+

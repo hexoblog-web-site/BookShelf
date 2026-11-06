@@ -1,0 +1,160 @@
+<%
+/**
+ * user-widget.ejs —— 文章页侧栏「站长名片」（widgetId: user-widget）
+ *
+ * 结构沿用原版主题 layout/_widget/user-card.ejs 的 card-info 卡片
+ * （原版 widget.css 中注明「参考南方嘉木布局」），1:1 复刻视觉：
+ *   背景图铺顶 → 头像左跨 → 昵称压图 → 签名 → 三项统计 → 两个按钮
+ *
+ * 与 WP 版 UserWidget（inc/widget.php）的差异：
+ *   1. 原版输出「文章 / 评论 / 喜欢」，后两个依赖 WP 数据库
+ *      （wp_comments、wp_vt_star），静态站恒为 0，会显示两个刺眼的 0。
+ *      这里换成站内真实存在的 文章 / 标签 / 分类，且每项都能点进去。
+ *   2. 原版头像写死 /images/avatar.jpg；这里头像、背景图、昵称、签名、
+ *      按钮、徽章全部走 _config.yml 的 user_card 配置。
+ *   3. 原版按钮固定是 follow（GitHub）+ email，这里改成可配置数组：
+ *      第一个按钮为实心主色，其余为描边。
+ *   4. 原版徽章只支持配一张图片；这里没配图时用 CSS 画一个勾徽章。
+ *
+ * 样式见 source/style/user-card.css（原版 widget.css「个人卡片」段的搬运）。
+ */
+var cfg = vt_get_config('user_card', {}) || {};
+
+var avatar        = cfg.avatar || '/images/avatar.jpg';
+var nickname      = cfg.nickname || config.author || 'Admin';
+var description   = (cfg.description !== undefined && cfg.description !== null && cfg.description !== '')
+    ? cfg.description
+    : (config.subtitle || '');
+var background    = cfg.background || '';
+var certification = cfg.certification || '';
+var badge_on      = cfg.badge !== false;
+var buttons       = cfg.buttons || [];
+
+/* 社交图标：优先用名片自己的 social_items（_config.yml 的 user_card 节），
+   没配或写成空数组时回退到页脚的 sns_items —— 站点升级时不会因为漏配而变空白 */
+var social_own   = cfg.social_items;
+var social_items = (social_own && social_own.length) ? social_own : (vt_get_config('sns_items', []) || []);
+var social_on    = cfg.social !== false && social_items.length > 0;
+
+/* 链接处理：外部链接与协议链接原样输出，站内路径走 url_for */
+function card_link(u) {
+    u = u || '';
+    if (/^(https?:)?\/\//.test(u) || /^(mailto|tel|javascript):/i.test(u)) {
+        return u;
+    }
+    return url_for(u);
+}
+%>
+
+<% if (cfg.enable !== false && nickname) { %>
+<div class="card-widget card-info vt-user-card<%= background ? '' : ' no-bg' %>">
+
+    <% if (social_on) { %>
+    <% /*
+       右上角社交区：.social-icons 默认 opacity:0 收起，.more-info（竖排三点）
+       点击后给 .social-icons 加 .show 才露出。DOM 与参考站点一致，
+       因为 .author-info-social 是 right 定位的 flex 行，图标展开时向左生长。
+    */ %>
+    <div class="author-info-social">
+        <div class="social-icons">
+            <% social_items.forEach(function(s){ %>
+            <a href="<%- esc_url(s.link || '#') %>"
+               title="<%- esc_attr(s.title || '') %>"
+               aria-label="<%- esc_attr(s.title || '') %>"
+               <% if (!/^mailto:/i.test(s.link || '')) { %>target="_blank" rel="noopener"<% } %>>
+                <% if (s.icon) { %>
+                <i class="<%- esc_attr(s.icon) %>" aria-hidden="true"></i>
+                <% } else if (s.image) { %>
+                <img src="<%- esc_url(url_for(s.image)) %>" alt="<%- esc_attr(s.title || '') %>">
+                <% } %>
+            </a>
+            <% }); %>
+        </div>
+        <button type="button" class="more-info" aria-expanded="false" aria-label="<%- __('More') %>">
+            <span class="more-info-dots" aria-hidden="true"></span>
+        </button>
+    </div>
+    <% } %>
+
+    <% if (background) { %>
+    <div class="card-info-bg">
+        <img src="<%- esc_url(url_for(background)) %>" alt="<%- esc_attr(nickname) %>">
+    </div>
+    <% } %>
+
+    <div class="author-avatar<%= badge_on ? (certification ? ' has-certification cert-image' : ' has-certification') : '' %>">
+        <img src="<%- esc_url(url_for(avatar)) %>" alt="<%- esc_attr(nickname) %>">
+    </div>
+
+    <div class="author-info-name"><%- esc_html(nickname) %></div>
+
+    <div class="author-info-desc"><%- esc_html(description) %></div>
+
+    <div class="blog-info">
+        <a href="<%- esc_url(url_for('/archives/')) %>">
+            <span class="blog-info-num"><%- esc_html(site.posts.length) %></span>
+            <span class="blog-info-headline"><%- __('Articles') %></span>
+        </a>
+        <a href="<%- esc_url(url_for('/tags/')) %>">
+            <span class="blog-info-num"><%- esc_html(site.tags.length) %></span>
+            <span class="blog-info-headline"><%- __('Tags') %></span>
+        </a>
+        <a href="<%- esc_url(url_for('/categories/')) %>">
+            <span class="blog-info-num"><%- esc_html(site.categories.length) %></span>
+            <span class="blog-info-headline"><%- __('Categories') %></span>
+        </a>
+    </div>
+
+    <% if (buttons.length) { %>
+    <div class="card-btns">
+        <% buttons.forEach(function(b, i){ %>
+        <a class="<%= i === 0 ? 'btn-follow' : 'btn-email' %>" href="<%- esc_url(card_link(b.link)) %>"<% if (b.target) { %> target="<%- esc_attr(b.target) %>" rel="noopener"<% } %>>
+            <% if (b.icon) { %><i class="<%- esc_attr(b.icon) %>"></i><% } %><span><%- esc_html(b.text || '') %></span>
+        </a>
+        <% }); %>
+    </div>
+    <% } %>
+</div>
+
+<% if (certification) { %>
+<style>
+.card-info .author-avatar.has-certification::before {
+    background-image: url('<%- url_for(certification) %>');
+}
+</style>
+<% } %>
+
+<% if (social_on) { %>
+<script>
+/* 站长名片：右上角三点 → 展开/收起社交图标（对应参考站点的 toggleSocial） */
+(function () {
+    document.querySelectorAll('.card-info .author-info-social').forEach(function (box) {
+        var btn   = box.querySelector('.more-info');
+        var icons = box.querySelector('.social-icons');
+        if (!btn || !icons) return;
+
+        function setOpen(open) {
+            icons.classList.toggle('show', open);
+            btn.classList.toggle('active', open);
+            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            setOpen(!icons.classList.contains('show'));
+        });
+
+        /* 点卡片别处或页面空白处收起 */
+        document.addEventListener('click', function (e) {
+            if (!box.contains(e.target)) setOpen(false);
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') setOpen(false);
+        });
+    });
+})();
+</script>
+<% } %>
+
+<% } %>

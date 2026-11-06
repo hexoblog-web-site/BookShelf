@@ -1,0 +1,107 @@
+# ============================================================
+# BookShelf 语言包 —— 转写自 WordPress inc/languages/zh_CN.po
+# 仅收录模板与前端 i18n 用到的词条；WP 中未翻译的词条
+# （如 Table of contents / Expand / Collapse）WP 会原样输出
+# 英文 msgid，Hexo __() 未命中时同样返回原文，行为一致。
+# ============================================================
+zh-CN:
+  Search: 搜索
+  Search Results: 搜索结果
+  results: 的相关内容
+  Please log in: 请登录
+  Login: 登录
+  Profile: 个人资料
+  Dashboard: 后台面板
+  Logout: 退出登录
+  Home: 首页
+  Content: 正文
+  "Tag:": "标签:"
+  "Author:": "作者:"
+  " Year": 年
+  " Month": 月
+  " Day": 日
+  "404 Page Not Found": 404 页面未找到
+  "Page not found": 页面没找到
+  "Go to home": 返回首页
+  Sticky: 置顶
+  Latest: 最新文章
+  "No Content": 暂无内容
+  "Not content": 暂无内容
+  Recommendation: 精彩推荐
+  "No related articles": 没有相关文章
+  Previous: 上一篇
+  Next: 下一篇
+  "No more": 精彩内容正在努力赶来的路上
+  Like: 喜欢
+  Star: 收藏
+  Share: 分享
+  Donate: 打赏
+  "Scan QR code": 扫描二维码
+  Generating...: 生成中
+  Edit: 编辑
+  "Query Count": 查询次数
+  "Execution Time": 执行时间
+  Nickname: 昵称
+  Email: 邮箱
+  "Site URL": 网站地址
+  "Leave a comment": 发表评论
+  Reply: 回复
+  Cancel: 取消
+  "Comment Content": 评论内容
+  "Registration is not required": 注册不是必须的
+  "You must be logged in to post a comment.": 您必须登录后才能发表评论。
+  Delete: 删除
+  Comments: 评论
+  "No comments": 暂无评论
+  "One comment": 一条评论
+  comments: 条评论
+  Articles: 文章
+  Popular: 热门
+  "Recent Posts": 最新文章
+  "Category List": 分类列表
+  Categories: 分类
+  More: 更多
+  Verified: 已认证
+  Tags: 标签
+  "Add menu": 添加菜单
+  "Please create theme sidebar menu": 请创建主题侧边菜单
+  "Your comment is awaiting moderation.": 您的评论正在等待审核。
+  Uncategorized: 未分类
+  "Username or Email": 用户名或邮箱
+  Password: 密码
+  "Forgot Password?": 忘记密码？
+  "Register Account": 注册账户
+  Username: 用户名
+  "Verification Code": 验证码
+  "Please enter verification code": 请输入验证码
+  "Send Verification Code": 发送验证码
+  Register: 注册
+  "Login Account": 登录账户
+  "Login to Account": 登录账号
+  "Please enter the verification code you received": 请输入收到的验证码
+  "New Password": 新密码
+  "Reset Password": 重置密码
+  "← Back to enter email": ← 返回输入邮箱
+  "Privacy Policy": 隐私声明
+  "Terms of Service": 服务条款
+  "By registering/logging in, you agree to our <a href='%s'>Privacy Policy</a> and <a href='%s'>Terms of Service</a>": "注册/登录即表示您同意<a href='%s'>隐私声明</a>和<a href='%s'>服务条款</a>"
+  # 前端 i18n（wp_localize_script 注入的 vt_i18n_strings）
+  "Loading...": 加载中...
+  "Network error, please try again.": 网络错误，请稍后重试。
+  "Network error. Please try again": 网络错误，请稍后重试。
+  "Submitting reply...": 正在提交回复...
+  "Operation Failed": 操作失败
+  "Remove Like": 取消喜欢
+  "Remove Star": 取消收藏
+  Submitting...: 提交中...
+  "Submit failed": 提交失败
+  "Are you sure you want to delete this comment?": 确定要删除这条评论吗？
+  "Deleting...": 删除中...
+  "Delete failed": 删除失败
+  "Comment deleted successfully": 评论删除成功
+  "Comment cannot be empty.": 评论不能为空
+  "Comment cannot exceed %d characters.": 评论不能超过 %d 个字符
+  "Reply to comment...": 回复评论...
+  "Submit Reply": 提交回复
+  "Please enter reply content": 请输入回复内容
+  "Comment form not found": 未找到评论表单

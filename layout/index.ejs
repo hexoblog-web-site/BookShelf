@@ -1,0 +1,98 @@
+<%
+/**
+ * index.ejs ← index.php（主模版文件，1:1 转写）
+ *
+ * @author: vtheme <mail@vtheme.cn>
+ * @link https://www.liublog.cn
+ */
+
+/* get_header() */
+%><%- partial('_partial/header') %><%
+
+/* 首页板块：顺序、开关全部取自 _config.yml 的「板块统一配置」sections
+ * （书写顺序 = 显示顺序；show 为总开关；paged_hide 控制翻页后是否保留）。
+ * 兼容旧写法：没有 sections 时回落到 WP 原生 home_layout.enabled + home_paged_exclude。 */
+var template_whitelist = ['hot', 'last', 'links', 'notices', 'slider'];
+
+var current_page = parseInt(page.current || page.page || 1, 10);
+if (isNaN(current_page) || current_page < 1) {
+    current_page = 1;
+}
+var is_paged = current_page > 1;
+
+/* 布尔容错：yml 里写成 "false" / "0" / "no" 也按 false 处理 */
+function vt_flag(val, fallback) {
+    if (val === undefined || val === null || val === '') return fallback;
+    if (typeof val === 'string') {
+        var s = val.trim().toLowerCase();
+        if (s === 'false' || s === '0' || s === 'no' || s === 'off') return false;
+        if (s === 'true' || s === '1' || s === 'yes' || s === 'on') return true;
+    }
+    return !!val;
+}
+
+var vt_sections = vt_get_config('sections', {});
+if (!vt_sections || typeof vt_sections !== 'object' || Array.isArray(vt_sections)) {
+    vt_sections = {};
+}
+var vt_has_sections = Object.keys(vt_sections).length > 0;
+
+/* 显示顺序：sections 的书写顺序（只保留首页板块，侧栏小工具自动忽略） */
+var vt_order = [];
+if (vt_has_sections) {
+    Object.keys(vt_sections).forEach(function (k) {
+        if (template_whitelist.indexOf(k) !== -1) vt_order.push(k);
+    });
+}
+if (!vt_order.length) {
+    // 兼容：无 sections 时用 WP 原生 home_layout.enabled
+    var home_config = vt_get_config('home_layout', {enabled: []}) || {};
+    var enabled = home_config.enabled || [];
+    enabled.forEach(function (k) {
+        k = String(k).trim();
+        if (template_whitelist.indexOf(k) !== -1) vt_order.push(k);
+    });
+    // 兼容旧字段 home_paged_exclude（数组形式 = 翻页隐藏）
+    var legacy_exclude = vt_get_config('home_paged_exclude', []) || [];
+    if (!Array.isArray(legacy_exclude)) legacy_exclude = [];
+    vt_order = vt_order.filter(function (k) {
+        return !(is_paged && legacy_exclude.indexOf(k) !== -1);
+    });
+} else {
+    /* sections 模式：按 show / paged_hide 判断是否输出 */
+    vt_order = vt_order.filter(function (k) {
+        var cfg = vt_sections[k];
+        if (cfg && typeof cfg === 'object') {
+            if (!vt_flag(cfg.show, true)) return false;                   // 总开关关闭
+            if (is_paged && vt_flag(cfg.paged_hide, false)) return false; // 翻页后隐藏
+        }
+        return true;
+    });
+}
+
+/* 首页此前一个 h1 都没有：幻灯片是配图、板块标题是 div，
+ * 搜索引擎只能从 <title> 猜这页讲什么，拿不到「站点叫什么」的正文信号。
+ * 视觉上不改设计（页面顶部本来就是一整块幻灯片大图），
+ * 用 .vt-sr-only 塞一个读屏可见、人眼不可见的 h1。 */
+%>
+<h1 class="vt-sr-only"><%= config.title %><% if (config.subtitle) { %> —— <%= config.subtitle %><% } %><% if (is_paged) { %>（第 <%= current_page %> 页）<% } %></h1>
+<%
+vt_order.forEach(function (k) {
+    // WP: require_once THEME_DIR . '/templates/home/'. $k .'.php'
+    if (k === 'slider') {
+        %><%- partial('_partial/home/slider') %><%
+    } else if (k === 'notices') {
+        %><%- partial('_partial/home/notices') %><%
+    } else if (k === 'hot') {
+        %><%- partial('_partial/home/hot') %><%
+    } else if (k === 'last') {
+        %><%- partial('_partial/home/last') %><%
+    } else if (k === 'links') {
+        %><%- partial('_partial/home/links') %><%
+    }
+});
+%>
+
+<%
+/* get_footer() */
+%><%- partial('_partial/footer') %>

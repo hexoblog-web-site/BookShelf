@@ -1,0 +1,105 @@
+
+.main-container {
+  width: 100%;
+  margin: 8px auto;
+  padding: 0 8px;
+  box-sizing: border-box;
+}
+
+.main-container::after {
+  content: "";
+  display: block;
+  clear: both;
+}
+
+.main-container .main-widget {
+  width: 100%;
+}
+
+.main-container .main-widget > div:first-child { margin-top: 0; }
+.main-container .main-widget > div:last-child{ margin-bottom: 0; }
+
+.main-container .main-widget .header {
+  font-size: var(--vt-font-size-base);
+  margin-bottom: 15px;
+}
+
+.main-container .media-widget {
+  background-color: var(--vt-bg-color-card);
+  box-shadow: 0 0 3px 0 var(--vt-shadow-color);
+  border-radius: var(--vt-border-radius);
+}
+
+
+@media only screen and (min-width: 768px) {
+  .main-container {
+    width: 1200px;
+    margin: 20px auto;
+    padding: 0px 0 0 0;
+    display: flex;
+    justify-content: flex-start;
+  }
+  .main-container::after {
+    content: "";
+    display: block;
+    clear: both;
+  }
+
+  .main-container .main-widget {
+    width: 880px;
+  }
+  .main-container .main-widget .header {
+    font-size: 20px;
+    margin-bottom: 20px;
+  }
+}
+
+
+/******************************************************************************
+ * sider
+ */
+.sider{
+  margin: 8px 0;
+}
+
+.sider > div {
+  margin: 8px 0;
+}
+.sider > div:first-child {
+  margin-top: 0;
+}
+
+@media only screen and (min-width: 768px) {
+  .sider {
+    width: 300px;
+    flex: 0 0 300px;
+    margin: 0;
+    margin-left: 20px;
+    position: relative;
+  }
+  /* 最后一个模块粘性定位 */
+  .sider > div:last-child {
+    position: sticky;
+    top: 20px;
+    margin-bottom: 0;
+  }
+  .sider > div {
+    margin: 0 0 20px 0;
+  }
+}
+
+
+/**
+ * 宽屏样式覆盖
+ */
+@media only screen and (min-width: 768px) {
+  .main-container[full-width] .main-widget {
+    width: 100%;
+  }
+  .main-container[full-width] .sider {
+    display: none;
+  }
+}
+
+
+

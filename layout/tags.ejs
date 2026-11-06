@@ -1,0 +1,81 @@
+<%
+/**
+ * tags.ejs —— 标签列表页布局（/tags/）
+ *
+ * WordPress 版主题没有 tags.php（WP 核心与 Mirage 主题均不生成
+ * /tags/ 索引页，导航中的链接由站长在后台菜单自行设置；需要该页面时
+ * 站长的做法是创建一个「页面」，由 page.php 模板渲染）。
+ * Hexo 生成器不会自动生成 /tags/ 索引页，为避免导航 404，此处按
+ * page.php 的结构 1:1 转写（面包屑 + page-title + 内容区 + 侧栏），
+ * 内容区输出 WP TagsWidget（inc/widget.php）的原始 DOM，但用
+ * _partial/widgets/tags-list 而非侧栏的 tags-widget：这一页要列全
+ * 站点所有标签、名称不截断，侧栏那套四字截断 + tags_num 条数上限
+ * 在这里会把 500+ 个标签砍成 6 个。
+ * 未新增任何 WP 主题中不存在的区块与样式。
+ *
+ * 使用方式：在 source/tags/index.md 的 front-matter 中写
+ *   ---
+ *   title: 标签
+ *   layout: tags
+ *   ---
+ * full_width: true 可全宽显示（WP: get_post_meta('_vt_article_full_width')）。
+ * Markdown 正文（可选）会显示在标签云上方，对应 WP 的 the_content()。
+ */
+
+/* get_header() */
+%><%- partial('_partial/header') %><%
+
+var vt_config = vt_get_config();
+
+// 全宽显示
+var full_width = page.full_width;
+var full_width_attribute = full_width ? 'full-width' : '';
+%>
+
+
+<% if(vt_get_config('breadcrumbs_enabled')){ %>
+    <div class="main-container" <%= full_width_attribute %> >
+        <div class="main-widget">
+            <%- get_breadcrumbs() %>
+        </div>
+    </div>
+<% } %>
+
+
+<div class="main-container" <%= full_width_attribute %>>
+    <div class="main-widget">
+        <div class="article-widget">
+            <h1 class="page-title">
+                <%= page.title %>
+            </h1>
+
+            <div class="content-action">
+                <% /* WP: current_user_can('manage_options') 管理员编辑链接（无后端，保留结构） */ %>
+            </div>
+
+            <div class="page-content content-style">
+                <%
+                /* the_content() —— 页面自定义正文（可选，对应 WP 页面内容） */
+                %>
+                <%- page.content %>
+
+                <%
+                /* WP: 页面内容区输出 TagsWidget（inc/widget.php）
+                   的原始 DOM —— 结构一致，但不截断、不限条数 */
+                %>
+                <%- partial('_partial/widgets/tags-list') %>
+            </div>
+        </div>
+    </div><!-- .main-widget -->
+
+    <% if(!full_width){ %>
+        <div class="sider">
+            <%- partial('_partial/sidebar', {name: 'default-sidebar'}) %>
+
+            <%- vt_theme_ad('ad_sidebar') %>
+        </div>
+    <% } %>
+</div>
+
+<% /* get_footer() */ %>
+<%- partial('_partial/footer') %>

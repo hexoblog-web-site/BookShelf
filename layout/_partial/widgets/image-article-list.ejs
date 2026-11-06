@@ -1,0 +1,26 @@
+<%
+/**
+ * image-article-list.ejs ← inc/widget.php ArticleWidget::widget()（1:1 转写）
+ * 固定标题、固定显示数量、不支持分类筛选。
+ */
+var title = vt_get_config('recent_title', __('Recent Posts'));
+var icon = vt_get_config('recent_icon', '');
+var posts_per_page = parseInt(vt_get_config('recent_num', 4), 10);
+if (isNaN(posts_per_page) || posts_per_page <= 0) posts_per_page = 4;
+
+var article_query = site.posts.toArray().sort(function (a, b) {
+    return b.date - a.date;
+}).slice(0, posts_per_page);
+%>
+<div class="recent-posts widget-container">
+    <div class="widget-header">
+        <div class="widget-title"><%- vt_section_title(title, icon) %></div>
+    </div>
+    <div class="recent-posts-wrapper">
+        <% if (article_query.length) { %>
+            <% article_query.forEach(function(post){ %>
+                <%- partial('_partial/card', {post: post}) %>
+            <% }); %>
+        <% } %>
+    </div>
+</div>

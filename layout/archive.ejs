@@ -1,0 +1,100 @@
+<%
+/**
+ * archive.ejs —— Hexo 归档页布局
+ *
+ * WordPress 版主题没有 archive.php（日期归档按模板层级回落到
+ * index.php）。Hexo 生成器会请求 archive 布局，为保持列表页
+ * DOM 结构与 WP 一致，此处按 category.php 的列表结构转写
+ * （banner + media-list + card + paginate_links + sider），
+ * 未新增任何 WP 主题中不存在的区块。
+ */
+
+/* get_header() */
+%><%- partial('_partial/header') %><%
+
+var vt_config = vt_get_config();
+
+var full_width = 0;
+var paged = page.current || 1;
+
+// 获取第一篇文章的缩略图或者图片（与 category.php 同逻辑）
+var banner_image = url_for('/images/banner.jpg');
+var all_posts = (page.posts && page.posts.toArray ? page.posts.toArray() : []).slice(0, 1);
+if (all_posts.length) {
+    var thumb = all_posts[0].cover || all_posts[0].banner;
+    banner_image = thumb ? url_for(thumb) : banner_image;
+}
+
+/* 归档页由 Hexo 内置生成，没有对应的 md 文件，page.title 恒为空。
+ * 原先兜底写的是 __('Content')，翻出来是「正文」—— 一个归档列表页
+ * 顶上写着「正文」很莫名其妙。这里按归档层级自己拼：
+ *   /archives/2026/03/ → 「2026 年 3 月」
+ *   /archives/2026/    → 「2026 年」
+ *   /archives/         → 「全部归档」 */
+var arch_title = page.title;
+if (!arch_title) {
+    if (page.year && page.month) arch_title = page.year + ' 年 ' + page.month + ' 月';
+    else if (page.year) arch_title = page.year + ' 年';
+    else arch_title = '全部归档';
+}
+%>
+
+
+<div class="banner" style="background-image: url(<%= esc_url(banner_image) %>)">
+    <div class="banner-container">
+        <h1 class="title"><%= arch_title %></h1>
+    </div>
+</div>
+
+
+<div class="main-container">
+    <div class="main-widget">
+        <div class="media-list">
+            <% if (page.posts && page.posts.length) { %>
+                <% page.posts.forEach(function(post) { %>
+                    <%- partial('_partial/card', {post: post}) %>
+                <% }); %>
+            <% } else if (paged == 1) { %>
+                <div class="no-content">
+                    <img src="<%- url_for('/images/empty.png') %>" alt="">
+                    <p><%= esc_html(__('Not content')) %></p>
+                </div>
+            <% } %>
+        </div>
+
+        <%
+        var max_num_pages = page.total || 1;
+        function linkFor(n) {
+            return n === 1 ? url_for(page.base || '') : url_for((page.base || '') + 'page/' + n + '/');
+        }
+        %>
+
+        <div class="vt-captain-pagination pagination-container">
+            <%- vt_paginate_links({
+                current: paged,
+                total: max_num_pages,
+                prev_text: '<i class="fas fa-chevron-left"></i>',
+                next_text: '<i class="fas fa-chevron-right"></i>',
+                'type': 'list',
+                end_size: 2,
+                mid_size: 2,
+                linkFor: linkFor
+            }) %>
+        </div>
+
+    </div>
+
+
+    <% if(!full_width){ %>
+        <div class="sider">
+            <%- partial('_partial/sidebar', {name: 'default-sidebar'}) %>
+
+            <%- vt_theme_ad('ad_sidebar') %>
+        </div>
+    <% } %>
+
+</div>
+
+
+<% /* get_footer() */ %>
+<%- partial('_partial/footer') %>

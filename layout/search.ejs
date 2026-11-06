@@ -1,0 +1,115 @@
+<%
+/**
+ * search.ejs —— 站内搜索页
+ *
+ * 结构对齐 WordPress 版 search.php：banner + 卡片列表（templates/card）
+ * + 分页（paginate_links）+ 侧栏。差别只有两处，都是静态站的必然：
+ *   1. search.php 顶部的搜索框来自 header.php 的后端表单；静态站没有后端，
+ *      所以把输入框放在列表上方（原来的弹窗搜索框只做跳转入口）。
+ *   2. 无关键词时 WP 会列出全部文章；这里改为提示 + 高频标签入口，
+ *      避免和归档页重复。
+ *
+ * 使用方式：source/search/index.md 的 front-matter 写
+ *   title: 搜索
+ *   layout: search
+ *
+ * 数据：/search.json（hexo-generator-searchdb，检索用正文）
+ *     + /search-meta.json（scripts/search-index.js，卡片用封面/日期/分类/标签）
+ * 检索、分页、高亮全部在前端完成。
+ */
+
+/* get_header() */
+%><%- partial('_partial/header') %><%
+
+var vt_config = vt_get_config();
+
+var total_posts = (site.posts && site.posts.length) ? site.posts.length : 0;
+
+/* 空结果时给几个高频标签当入口：按文章数降序取前 12 个 */
+var tag_list = (site.tags && site.tags.toArray) ? site.tags.toArray() : [];
+tag_list.sort(function (a, b) { return (b.length || 0) - (a.length || 0); });
+tag_list = tag_list.slice(0, 12);
+
+var banner_image = url_for('/images/banner.jpg');
+%>
+
+
+<div class="banner" style="background-image: url(<%= esc_url(banner_image) %>)">
+    <div class="banner-container">
+        <h1 class="title"><%= page.title || __('Search') %></h1>
+        <div class="description" id="vt-search-banner-desc">全站 <%= total_posts %> 篇文章，可搜标题、标签与正文</div>
+    </div>
+</div>
+
+
+<div class="main-container">
+    <div class="main-widget">
+
+        <div class="article-widget vt-search-panel"
+             data-index="<%- url_for('/search.json') %>"
+             data-meta="<%- url_for('/search-meta.json') %>"
+             data-avatar="<%- vt_get_custom_avatar_url() %>"
+             data-default-cover="<%- url_for('/images/default.jpg') %>"
+             data-total="<%= total_posts %>">
+
+            <form class="vt-search-form" role="search" method="get" action="<%- url_for('/search/') %>">
+                <label class="vt-search-label" for="vt-search-input">搜索文章</label>
+                <div class="vt-search-field">
+                    <input class="vt-search-input"
+                           id="vt-search-input"
+                           type="search"
+                           name="s"
+                           autocomplete="off"
+                           spellcheck="false"
+                           placeholder="输入关键词，多个词用空格分开">
+                    <a class="vt-search-clear" href="javascript:;" aria-label="清空" hidden>
+                        <i class="fa-solid fa-xmark"></i>
+                    </a>
+                </div>
+                <button class="vt-search-submit" type="submit">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <span>搜索</span>
+                </button>
+            </form>
+
+            <div class="vt-search-status" role="status" aria-live="polite"></div>
+        </div>
+
+        <% /* 结果列表：与分类页同一套 .media-list + .vt-card-item 结构 */ %>
+        <div class="media-list vt-search-results" hidden></div>
+
+        <% /* 初始状态：提示 + 高频标签 */ %>
+        <div class="vt-search-prompt">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <p>输入关键词开始检索</p>
+            <% if (tag_list.length) { %>
+                <div class="vt-search-chips">
+                    <span class="vt-search-chips-label">试试这些：</span>
+                    <% tag_list.forEach(function (tag) { %>
+                        <a class="vt-search-chip" href="javascript:;" data-q="<%= esc_html(tag.name) %>"><%= esc_html(tag.name) %></a>
+                    <% }); %>
+                </div>
+            <% } %>
+        </div>
+
+        <% /* 无结果：复刻 WP 的 .no-content 结构 */ %>
+        <div class="no-content vt-search-nocontent" hidden>
+            <img src="<%- url_for('/images/empty.png') %>" alt="">
+            <p>没有找到相关文章，换个关键词试试</p>
+        </div>
+
+        <div class="vt-captain-pagination pagination-container vt-search-pagination" hidden></div>
+
+    </div><!-- .main-widget -->
+
+    <div class="sider">
+        <%- partial('_partial/sidebar', {name: 'default-sidebar'}) %>
+
+        <%- vt_theme_ad('ad_sidebar') %>
+    </div>
+</div>
+
+<script src="<%- url_for('/js/search.js') %>?v=<%= config.asset_version || '1' %>" defer></script>
+
+<% /* get_footer() */ %>
+<%- partial('_partial/footer') %>

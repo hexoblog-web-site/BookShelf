@@ -1,0 +1,327 @@
+<%
+/**
+ * recommend.ejs —— 推荐页（文章推荐）
+ *
+ * 页面地址：/recommend/（默认不进导航）
+ * 触发方式：source/recommend/index.md 的 front-matter 写 layout: recommend
+ * 数据来源：source/_data/recommend.yml（数据结构见文件开头注释）
+ *
+ * 版式：Banner（含统计）→ 分组（大标题）→ 子分组（小标题）→ 卡片网格
+ * 卡片沿用全站配色变量（--vt-*），暗色模式自动跟随，不用另写一套。
+ *
+ * 两种分组写法，可以混用：
+ *   1. 手写清单   good_things: 下面逐条写 equipment_list
+ *   2. 自动取文   auto: true + mode，从站内文章里取，发新文章后自己更新
+ *                 mode: category（按分类，默认）/ featured（打了 featured 标记的）/ latest（最新）
+ *
+ * 开关：recommend.enable（总开关）
+ * 参数：主题 _config.yml 的 recommend 段，全部带注释
+ * 样式：source/style/recommend-page.css，仅本页加载（见 header.ejs）
+ */
+var cfg      = vt_get_config('recommend', {}) || {};
+var rc_on    = cfg.enable !== false;
+var data_key = cfg.data || 'recommend';
+var list     = (site.data && site.data[data_key]) || [];
+
+var rc_bg     = cfg.top_background || '/images/friend-circle.webp';
+var rc_cover  = cfg.error_img || cfg.default_cover || '/images/default-cover.webp';
+var rc_cols   = parseInt(cfg.columns, 10) || 4;
+var rc_link   = cfg.bottom_right_link || '/links/';
+var txt_web   = cfg.link_text_web || '前往官网';
+var txt_post  = cfg.link_text_post || '查看文章';
+
+/* 外链判断：http(s) 开头算外部站点，其余当站内文章 */
+function is_ext(u) { return /^https?:\/\//i.test(String(u || '')); }
+
+/* 把一篇 Hexo 文章压成卡片数据，字段名跟手写清单保持一致 */
+function post_item(post) {
+    return {
+        name: post.title,
+        specification: date(post.date, 'YYYY-MM-DD'),
+        description: post.description || '',
+        image: post.cover || '',
+        link: post.path
+    };
+}
+
+/**
+ * auto 分组：从站内文章里取卡片，三种取法
+ *
+ *   mode: category（默认）按一级分类分组，每类取最新 limit 篇
+ *   mode: featured        只取 front-matter 里写了 featured: true 的文章
+ *   mode: latest          不看分类，取全站最新 limit 篇
+ *
+ * group.limit      取几篇（category 模式是每个分类，另两种是整组）
+ * group.categories 仅 category 模式生效，留空 = 全部一级分类
+ * group.title      子分组标题，留空则不显示小标题（featured / latest 常留空）
+ * group.fallback   仅 featured 模式：写 latest 时，标记不足 limit 篇用最新文章补足
+ * group.picks      组内最前面先随机铺 N 篇（不带小标题），再接正式的取文结果
+ * group.more       仅 featured / latest 模式：小标题右端「more+」的跳转地址，
+ *                  分类模式会自动取该分类归档页，不用写
+ */
+/**
+ * 全局去重：整页同一篇文章/同一个链接只出现一次。
+ *
+ * 顺序就是 recommend.yml 里分组的顺序 —— 靠前的分组先占位，
+ * 后面的分组（分类、随机铺的那块）自动跳过已经出现过的卡片。
+ * 「博主最爱」用 fallback 拉最新、分类组也取最新，本来必然撞车，
+ * 有了这一层就不用手动挑文章也不会重复。
+ */
+var seen = {};
+
+/* 归一化 key：去掉协议、末尾斜杠和 index.html，外链与站内链都能对上 */
+function card_key(it) {
+    return String(it.link || it.title || '')
+        .replace(/^https?:\/\//i, '')
+        .replace(/\/+$/, '')
+        .replace(/index\.html$/, '');
+}
+
+/* 从一组卡片里取出前 limit 张没出现过的，并登记进 seen */
+function take(items, limit) {
+    var out = [];
+    for (var i = 0; i < items.length && out.length < limit; i++) {
+        var k = card_key(items[i]);
+        if (!k || seen[k]) continue;
+        seen[k] = true;
+        out.push(items[i]);
+    }
+    return out;
+}
+
+function posts_cards(query, limit) {
+    return take(query.sort('-date').toArray().map(post_item), limit);
+}
+
+/* 随机抽 N 篇：先洗牌再取前 N，跳过已出现的。构建时抽一次，重新生成才会换一批 */
+function pick_random(pool, n) {
+    var arr = (typeof pool.toArray === 'function' ? pool.toArray() : pool.slice()).slice();
+    for (var i = arr.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return take(arr.map(post_item), n);
+}
+
+function auto_subs(group) {
+    var limit = parseInt(group.limit, 10) || 3;
+    var picks = parseInt(group.picks, 10) || 0;
+    var mode  = group.mode || 'category';
+    var title = group.title == null ? '' : String(group.title);
+
+    /* group.picks：组内最前面先铺一块随机卡片（不带小标题）。
+       必须先抽，才能抢在正式取文之前占位 —— 否则随机块挑到的
+       全是正式取文已经用掉的文章，去重后就一张不剩。 */
+    function wrap(subs, pick_items) {
+        if (!pick_items || !pick_items.length) return subs;
+        return [{ title: '', description: '', items: pick_items, picks: true }].concat(subs);
+    }
+
+    /* 取法一、二：featured / latest —— 全站一条流水，只出一个子分组 */
+    if (mode === 'featured' || mode === 'latest') {
+        var picked = mode === 'featured'
+            ? site.posts.filter(function (p) { return p.featured; })
+            : site.posts;
+        var pool  = typeof picked.toArray === 'function' ? picked.toArray() : picked;
+
+        var pick_items = picks ? pick_random(pool, picks) : [];
+
+        var items = posts_cards(picked, limit);
+
+        /* 标记的文章不够，用最新的补齐（仅在写了 fallback: latest 时）。
+           补齐同样走去重，跳过本组已取到的文章 */
+        if (mode === 'featured' && items.length < limit && group.fallback === 'latest') {
+            items = items.concat(take(site.posts.sort('-date').toArray().map(post_item), limit - items.length));
+        }
+
+        return wrap([{
+            title: title,
+            description: '',
+            items: items,
+            /* 没有分类归档可指，只有写了 group.more 才出「more+」 */
+            link: group.more ? url_for(group.more) : ''
+        }], pick_items);
+    }
+
+    /* 取法三（默认）：按一级分类，分类按文章数从多到少排，避免顺序飘 */
+    var wanted = (group.categories || []).map(String);
+    var cats   = site.categories.filter(function (c) { return !c.parent; });
+    var arr    = typeof cats.toArray === 'function' ? cats.toArray() : cats;
+
+    if (wanted.length) {
+        arr = arr.filter(function (c) { return wanted.indexOf(c.name) > -1; });
+    }
+    arr.sort(function (a, b) { return b.posts.length - a.posts.length; });
+
+    /* 随机池取这些分类下的全部文章，别抽到本组范围外的内容 */
+    var cat_pool = [];
+    arr.forEach(function (c) {
+        var ps = typeof c.posts.toArray === 'function' ? c.posts.toArray() : c.posts;
+        cat_pool = cat_pool.concat(ps);
+    });
+
+    var pick_items = picks ? pick_random(cat_pool, picks) : [];
+
+    return wrap(arr.map(function (c) {
+        return {
+            title: c.name,
+            description: '',
+            items: posts_cards(c.posts, limit),
+            /* 分类归档页，供白条右端的「more+」跳转 */
+            link: url_for(c.path)
+        };
+    }), pick_items);
+}
+
+/* 汇总：子分组数 = 小标题数，条目数 = 全部卡片数（auto 分组要先算出来）
+   取不到文章的子分组直接丢掉，避免页面上出现空标题 */
+var groups = list.map(function (g) {
+    var subs = g.auto
+        ? auto_subs(g)
+        : (g.good_things || []).map(function (t) {
+            /* 手写清单同样走去重：同一条链接整页只出现一次（limit 给大数 = 全都要） */
+            return { title: t.title, description: t.description, items: take(t.equipment_list || [], 9999) };
+        });
+    return { raw: g, subs: subs.filter(function (s) { return s.items.length; }) };
+}).filter(function (g) { return g.subs.length; });
+
+var group_count = 0, item_count = 0;
+groups.forEach(function (g) {
+    g.subs.forEach(function (s) {
+        /* 随机铺的那块没有小标题，不算一个分组，但卡片数照算 */
+        if (!s.picks) group_count++;
+        item_count += s.items.length;
+    });
+});
+%><%- partial('_partial/header') %>
+
+<% if (!rc_on) { %>
+
+<div class="main-container page-recommend">
+    <div class="main-widget">
+        <div class="rc-off">
+            <i class="fas fa-circle-info"></i>
+            <span>推荐页已关闭，打开主题 <code>_config.yml</code> 里的 <code>recommend.enable</code> 即可恢复。</span>
+        </div>
+    </div>
+</div>
+
+<% } else if (!item_count) { %>
+
+<div class="main-container page-recommend" full-width>
+    <div class="main-widget">
+        <div class="rc-off">
+            <i class="fas fa-box-open"></i>
+            <span>还没有内容，在 <code>source/_data/<%= data_key %>.yml</code> 里按格式添加即可。</span>
+        </div>
+    </div>
+</div>
+
+<% } else { %>
+
+<div class="main-container page-recommend" full-width style="--rc-columns: <%= rc_cols %>">
+    <div class="main-widget">
+
+        <%# Banner %>
+        <div class="rc-banner" style="background-image:url('<%- url_for(rc_bg) %>')">
+            <div class="rc-banner-inner">
+                <div class="rc-banner-tips"><%= cfg.tips || '推荐清单' %></div>
+                <h1 class="rc-banner-title"><%= cfg.title || '我的推荐' %></h1>
+                <div class="rc-banner-bottom">
+                    <%# 版式与友链页一致：上面只留「小字 + 大标题」两句，统计单独一行靠左 %>
+                    <span class="rc-banner-stats">
+                        共 <b><%= item_count %></b> 条<i class="rc-dot">·</i><b><%= group_count %></b> 个分组
+                    </span>
+                    <a class="rc-banner-btn" href="<%- url_for(rc_link) %>">
+                        <i class="fas fa-circle-arrow-right"></i>
+                        <span><%= cfg.bottom_right || '更多好物' %></span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <% groups.forEach(function (g) {
+            var group = g.raw;
+            var gTitle = group.class_name || '';
+            var gDesc  = group.description || '';
+            var gTip   = group.tip || '';
+        %>
+        <section class="rc-group">
+
+            <% if (gTitle || gDesc || gTip) {
+                var gCount = 0;
+                g.subs.forEach(function (s) { gCount += s.items.length; });
+                /* 组内只有一个子分组且带小标题时，条数已在小标题旁，这里不重复 */
+                var showCount = g.subs.length > 1 || !g.subs[0].title;
+            %>
+            <div class="rc-group-head">
+                <% if (gTitle) { %>
+                <h2 class="rc-group-title"><%= gTitle %></h2>
+                <% } %>
+                <% if (gDesc)  { %><p class="rc-group-desc"><%= gDesc %></p><% } %>
+                <% if (gTitle && showCount) { %><span class="rc-group-count"><%= gCount %> 条</span><% } %>
+                <% if (gTip)   { %><p class="rc-group-tip"><%= gTip %></p><% } %>
+            </div>
+            <% } %>
+
+            <% g.subs.forEach(function (sub) { %>
+            <div class="rc-sub">
+
+                <% if (sub.title || sub.description) { %>
+                <div class="rc-sub-head">
+                    <% if (sub.title)       { %><h3 class="rc-sub-title"><%= sub.title %></h3><% } %>
+                    <% if (sub.description) { %><p class="rc-sub-desc"><%= sub.description %></p><% } %>
+                    <% if (sub.link) { %>
+                    <a class="rc-sub-more" href="<%- sub.link %>" title="查看全部「<%= sub.title || '内容' %>」">
+                        <span>more</span><i class="fas fa-plus"></i>
+                    </a>
+                    <% } else { %>
+                    <span class="rc-sub-count"><%= sub.items.length %> 条</span>
+                    <% } %>
+                </div>
+                <% } %>
+
+                <div class="rc-grid">
+                    <% sub.items.forEach(function (item) {
+                        var ext  = is_ext(item.link);
+                        var href = item.link ? url_for(item.link) : 'javascript:;';
+                    %>
+                    <a class="rc-card"
+                       href="<%- href %>"
+                       <% if (ext) { %>target="_blank" rel="noopener nofollow"<% } %>
+                       title="<%= item.name %>">
+                        <div class="rc-cover">
+                            <img src="<%- url_for(item.image || rc_cover) %>"
+                                 alt="<%= item.name %>"
+                                 loading="lazy"
+                                 onerror="this.onerror=null;this.src='<%- url_for(rc_cover) %>'">
+                        </div>
+                        <div class="rc-body">
+                            <% if (item.specification) { %>
+                            <span class="rc-spec"><%= item.specification %></span>
+                            <% } %>
+                            <h4 class="rc-name"><%= item.name %></h4>
+                            <% if (item.description) { %>
+                            <p class="rc-desc"><%= item.description %></p>
+                            <% } %>
+                            <span class="rc-more">
+                                <%= ext ? txt_web : txt_post %>
+                                <i class="fas fa-angle-right"></i>
+                            </span>
+                        </div>
+                    </a>
+                    <% }); %>
+                </div>
+
+            </div>
+            <% }); %>
+
+        </section>
+        <% }); %>
+
+    </div><!-- .main-widget -->
+</div>
+
+<% } %>
+
+<%- partial('_partial/footer') %>

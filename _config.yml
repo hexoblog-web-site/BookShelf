@@ -1,0 +1,897 @@
+# ============================================================
+# BookShelf（书架）Hexo Theme Config
+#
+# 一款优雅的 Hexo 文学阅读博客主题。
+# 主题前身为 Mirage（vtheme.cn）的 Hexo 转写版 v3.12.0，本仓库更名
+# BookShelf 后继续维护：页面结构与配置项沿用原设计，阅读体验相关
+# 的增强集中写在 source/js/bookshelf-extra.js、source/style/bookshelf-extra.css。
+#
+# 本文件是 WordPress 主题 inc/config.php（Codestar Framework 后台设置项）
+# 的 1:1 转写。所有字段 ID（key）与 WordPress 版完全一致，
+# 模板（EJS）中通过 vt_get_config(key, default) 读取，
+# 与 WP 模板中 vt_get_config() 的调用一一对应。
+#
+# ★ 日常要改的板块开关 / 标题 / 图标 / 条数，全部集中在文件末尾的
+#   「板块统一配置 sections」一个块里，不必在下面逐段查找。
+#
+# @author  vtheme <mail@vtheme.cn>
+# @link    https://www.liublog.cn
+# ============================================================
+
+# ------------------------------------------------------------
+# 常规设置  General settings
+# （inc/config.php 第一节）
+# ------------------------------------------------------------
+basic_style: "#f45d1d"              # 主题色调 Theme color tone（default '#007aff'）
+update_is_on: "0"                   # 更新提示 Update prompt（WP 后台功能，静态站无效，保留字段）
+page_data_type: "0"                 # 显示页面参数 Display page parameters（0 隐藏 / 1 显示 / 2 console.log）
+editor_type: "1"                    # 编辑器 Editor（WP 后台功能，静态站无效，保留字段）
+dark_mode_type: "1"                 # 暗黑模式 Dark mode（1 开启 / 0 关闭 / 2 跟随系统）
+default_image: "/images/default.jpg"   # 默认图片 Default Image（列表卡片无封面时的占位，16:9）
+share_image: "/images/share-card.jpg"  # 分享卡 Social Share Card（og:image 兜底，1200×630）
+background_image: ""                # 背景图片 Background image
+lazy_load_enabled: true             # 懒加载 Lazy Loading
+
+# ------------------------------------------------------------
+# SEO 设置  SEO settings
+# （inc/config.php 第二节）
+# ------------------------------------------------------------
+keywords: ""                        # 关键字 Keywords（已废弃 → seo.keywords）
+description: ""                     # 描述 Description（已废弃 → seo.description）
+
+# ------------------------------------------------------------
+# 首页设置 - 布局设置  Home page settings / Layout setting
+# （inc/config.php home_layout，sorter 控件：
+#   WP 中 enabled/disabled 两个容器，此处用数组顺序表示显示顺序）
+# 白名单与 index.php 一致：hot / last / links / notices / slider
+# 说明：Hexo 版的显示顺序、显示开关、翻页隐藏已统一由文件末尾的
+#       「板块统一配置 sections」决定，本字段仅作 WP 原版兼容保留。
+# ------------------------------------------------------------
+home_layout:
+  enabled:
+    - slider                        # Sliders 幻灯片
+    - notices                       # Notices 通知公告
+    - hot                           # Hot topics 热门文章
+    - last                          # Latest 最新文章
+    - links                         # Links 友情链接
+  disabled: []
+
+# ------------------------------------------------------------
+# 首页设置 - 幻灯片模块  Sliders
+# （inc/config.php 第三节；slider.php 中读取 slider_height 默认 300）
+# ------------------------------------------------------------
+slider_height: 300                  # 幻灯片高度（slider.php: vt_get_config('slider_height', 300)）
+slider_autoplay: true               # 自动播放 Autoplay（CSF default true）
+slider_effect: "slide"              # 切换效果 Slider Effects（slide/fade/cube/coverflow/flip/cards/creative）
+slider_items:                       # 幻灯片列表 Slide list（group 控件）
+  - title: "年兽的传说：春节的由来"   # 标题 Title
+    image: "/upload/allimg/2026/0730/20260730_01.jpg"
+    target: false                   # 新窗口打开链接 New window opens link
+    link: "/articles/3ccc38b7.html" # 链接地址 Link address
+  - title: "值得品读的孔子的三十句金句名言"
+    image: "/upload/allimg/2026/0814/20260814_03.jpg"
+    target: false
+    link: "/articles/c7cd0c3d.html"
+  - title: "木匠手里无废料的故事"
+    image: "/upload/allimg/2026/0711/20260711_01.jpg"
+    target: false
+    link: "/articles/4a17b156.html"
+top_items:                          # 推荐 Recommendation（group 控件，slider.php 只取前 2 项）
+  - title: "牛郎织女：七夕的传说"
+    image: "/upload/allimg/2026/0728/20260728_03.jpg"
+    target: false
+    link: "/articles/e408726b.html"
+  - title: "老鼠嫁女：正月里那场没有新郎的喜事"
+    image: "/upload/allimg/2026/0817/20260817_01.jpg"
+    target: false
+    link: "/articles/3f8a21c7.html"
+# ------------------------------------------------------------
+# 首页设置 - 通知公告  Notices
+# （inc/config.php 通知公告节）
+# ------------------------------------------------------------
+notice_target: false                # 新窗口打开链接 New window opens link
+notice_items:                       # 通知列表（group 控件）
+  - title: "通知公告 1"             # 标题 Title
+    link: "/#1"                     # 链接 Links
+  - title: "通知公告 2"
+    link: "/#2"
+  - title: "通知公告 3"
+    link: "/#3"
+
+# ------------------------------------------------------------
+# 首页设置 - 热门文章  Hot topics
+# （inc/config.php 热门文章节）
+# WP 中 hot_cat_id 为分类 ID、hot_post_ids 为文章数字 ID；
+# Hexo 为静态站点，此处对应填写【分类名】与【文章文件名(slug)】。
+# 标题 / 图标 / 调用条数 → 见文件末尾 sections.hot（title/icon/num）
+# ------------------------------------------------------------
+hot_cat_id: []                      # 文章分类 Category（multiple；填分类名数组）
+hot_post_ids: ""                    # 文章ID列表 Article ID list（逗号分隔的文章 slug）
+
+# ------------------------------------------------------------
+# 首页设置 - 最新文章  Latest
+# （inc/config.php 最新文章节；posts_ids/posts_not_in_ids 在 Hexo 中填分类名）
+# ------------------------------------------------------------
+posts_ids: []                       # 文章分类 Category（仅显示这些分类下的文章，空=全部）
+posts_not_in_ids: []                # 排除分类 Exclude classification
+posts_auto_load: "1"                # 自动加载 Auto Load（1 开 / 0 关）
+posts_auto_load_limit: "1"          # 自动加载次数 Automatic loading times（0 为不限制）
+full_width: false                   # 全宽 Full width（最新文章模块）
+list_type: "0"                      # 布局 Layout（0 列表 List / 1 卡片 Card）
+vt_columns: "3"                     # 每行列数 Number of rows and columns（2/3/4/5）
+
+# ------------------------------------------------------------
+# 首页设置 - 友情链接  Links
+# （inc/config.php 友情链接节；links_switcher 对应 WP 链接管理开关）
+# 标题 / 图标 → 见文件末尾 sections.links（title/icon）
+# ------------------------------------------------------------
+links_switcher: true                # Links 开关
+
+# Hexo 静态站没有 WP 链接管理器（get_bookmarks），
+# 友情链接数据转写为下方 links_data 数组（结构对应 link_url/link_name/
+# link_description/link_image/link_target 字段），由 templates/home/links.php
+# 与 page-links.php 的相同 DOM 结构输出。
+links_data:
+  # 原第一条「Mirage 主题演示」指向本站域名，属于模板示例数据，已移除
+  - url: "https://hexo.io/"                  # link_url
+    name: "Hexo 官网"                        # link_name
+    description: "快速、简洁且高效的博客框架"    # link_description
+    image: "/images/link.png"                # link_image
+    target: "_blank"                         # link_target
+# 新增友情链接按上面结构继续追加即可：
+#  - url: "https://example.com/"
+#    name: "Example"
+#    description: ""
+#    image: ""
+#    target: "_blank"
+
+# page-links.php 的链接分组（WP: get_categories(taxonomy=link_category)
+# + get_bookmarks(category)）。每项 {name, links}，links 结构同 links_data。
+links_groups: []
+#  - name: "技术博客"
+#    links:
+#      - url: "https://example.com/"
+#        name: "Example"
+#        description: ""
+#        image: ""
+#        target: "_blank"
+
+# ------------------------------------------------------------
+# 友情链接页  Friend links（Butterfly flink 版式）
+# 模板：layout/links.ejs        样式：source/style/links-page.css
+# 数据：source/_data/<data>.yml（数据不放在主题里，换主题不用搬家）
+#
+# 触发方式：source/links/index.md 的 front-matter 必须是
+#   layout: links
+#
+# 数据结构与 Butterfly 完全一致，照抄它的 link.yml 即可用：
+#   - class_name: 分组名          # 渲染成 h2 标题，留空则不出标题
+#     class_desc: 分组说明        # 可选，标题下面那行灰字
+#     link_list:
+#       - name:    站点名         # 必填
+#         link:    https://...    # 必填
+#         avatar:  头像地址       # 留空 / 加载失败 -> 用下面的 error_img
+#         descr:   一句话描述     # 可选，卡片第二行
+#
+# 备注：安知鱼那套额外字段（siteshot / color / tag / flink_style /
+# hundredSuffix / recommend）本模板不读取，留着不影响渲染，删掉也不影响。
+# 上面 links_data / links_groups 那套是 WordPress 版遗留的扁平结构，
+# 只有老布局 page-links.ejs 还在用；友链页已改用本节的 link.yml。
+# ------------------------------------------------------------
+flink:
+  data: link                           # 数据文件名：source/_data/link.yml
+  error_img: "/images/link.png"        # 头像没填或加载失败时的兜底图
+  random: true                         # true 每次刷新打乱顺序（由 source/js/flink.js 执行）
+  columns: 3                           # 一行放几个；窄屏自动降成 2 个 / 1 个
+
+  # ---- 顶部 Banner（和朋友圈页同一种版式） ----
+  banner: true                         # false 则整块不输出，页面回到纯标题
+  banner_bg: "/images/minjian.webp"    # 背景图，建议 1200×400 以上的横图
+  banner_tips: "以文会友，以友辅仁"    # 大标题上方的小字
+  banner_btn: "去朋友圈"               # 右下角按钮文字
+  banner_link: "/fcircle/"             # 按钮跳转地址
+  banner_label: ""                     # 左下角文字；留空自动显示「共 N 个站点 · M 个分组」
+
+# ------------------------------------------------------------
+# 朋友圈 / 博友动态页  Friends circle
+#
+# 页面地址：/fcircle/（默认不进导航；要挂菜单，把 menu 里「朋友圈」那两行的注释去掉）
+# 页面文件：source/fcircle/index.md，front-matter 必须是 layout: fcircle
+# 模板 layout/fcircle.ejs ｜ 样式 source/style/fcircle-page.css ｜ 脚本 source/js/fcircle.js
+#
+# 数据从哪来：api_url 指向一个返回 fcircle.json 的接口，格式（hexo-circle-of-friends）：
+#   { "stats": {friends, active, articles, updated},
+#     "articles": [{title, link, author, avatar, date, description}] }
+#   默认值是 quanzi.liublog.cn 这个公共池，收录的是接入该服务的博友，
+#   不等于本站 link.yml 里的友链。想换成自己的数据，只改 api_url 一行，页面不用动。
+#
+# 参数一览（按顺序）：
+#   enable            页面总开关，false 时只显示「已关闭」提示，不请求接口
+#   tips / title      顶部小字 / 大标题
+#   bottom_left       左下角文字
+#   bottom_right      右下角按钮文字
+#   bottom_right_link 按钮与「全部友链」的跳转地址
+#   top_background    背景图
+#   error_img         头像加载失败兜底图
+#   api_url           数据接口
+#   per_page          每次加载几张卡片
+#   random            钓鱼块开关（随机抽一篇）
+#   stats             统计条开关（博友 / 活跃 / 文章 / 最后更新）
+# ------------------------------------------------------------
+fcircle:
+  enable: true                          # 页面总开关：false 时整页只显示提示，不发请求
+  tips: "订阅友链最新文章"              # Banner 上方小字
+  title: "朋友圈"                       # Banner 大标题
+  bottom_left: "友链"                   # Banner 左下角文字（显示在按钮左侧）
+  bottom_right: "友情链接"              # Banner 右下角按钮文字
+  bottom_right_link: "/links/"          # 按钮与「全部友链」的跳转地址
+  top_background: "/images/friend-circle.webp"   # Banner 背景图，建议 1200×400 以上的横图
+  error_img: "/images/placeholder.svg"  # 头像没填或加载失败时的兜底图
+  api_url: "https://quanzi.liublog.cn/" # 数据接口，末尾斜杠可省略
+  per_page: 12                          # 一屏渲染几张卡片，「加载更多」每次追加这么多
+  random: true                          # true 显示「钓鱼」块（随机抽一篇友链文章）
+  stats: true                           # true 显示统计条；false 整条不输出
+
+# ------------------------------------------------------------
+# 装备页（商品推荐）Equipment
+#
+# 页面地址：/equipment/
+# 页面文件：source/equipment/index.md，front-matter 必须是 layout: equipment
+# 模板 layout/equipment.ejs ｜ 样式 source/style/equipment-page.css
+# 数据 source/_data/equipment.yml
+#
+# 这个页面只放「商品」，卡片显示平台角标、价格、购买入口；
+# 文章推荐请用 recommend 段（/recommend/），两边不要混放。
+#
+# 商品条目字段：
+#   name / reason / tag / price / original_price / platform / image / link
+#   详细说明见 source/_data/equipment.yml 开头
+#
+# 电商推广 ID 见下方 equipment.ecommerce，三个平台各一组。
+#
+# 参数一览：enable / data / columns / tips / title /
+#           bottom_right / bottom_right_link / top_background / error_img /
+#           link_text_web / link_text_post / ecommerce
+# ------------------------------------------------------------
+equipment:
+  enable: true                          # 页面总开关：false 时整页只显示提示
+  data: "equipment"                     # 数据文件 source/_data/<data>.yml
+  columns: 4                            # 桌面端一行几张（窄屏自动降成 3 / 2 / 1）
+  tips: "分享装备带来的乐趣"                      # Banner 上方小字
+  title: "我的装备"                     # Banner 大标题
+  bottom_right: "友情链接"              # Banner 右下角按钮文字
+  bottom_right_link: "/links/"          # 按钮跳转地址
+  top_background: "/images/friend-circle.webp"    # Banner 背景图，建议 1200×400 以上横图
+  error_img: "/images/default-cover.webp"         # 封面图缺失或加载失败的兜底图
+  link_text_web: "前往官网"             # 外链卡片的链接文字
+  link_text_post: "查看文章"            # 站内卡片（指向文章）的链接文字
+
+  # ----------------------------------------------------------
+  # 电商推广 ID（淘宝客 / 京东联盟 / 多多进宝）
+  #
+  # 先说明一个前提：纯静态站没法实时转链。商品的推广链接仍然建议在
+  # 联盟后台「转链」生成后，整条填进 equipment.yml 的 link 字段。
+  # 这里记录账号 ID，作用有三：
+  #   1. 换号 / 换推广位时只改这一处；
+  #   2. 商品条目只写了平台商品 ID 时，拼出该平台的普通商品页（非推广）；
+  #   3. 配合 disclosure 在卡片和页脚输出「推广链接」提示（广告合规）。
+  #
+  # 淘宝客：pub_id 形如 mm_123456789_1234567_123456789，adzone_id 是推广位
+  # 京东联盟：union_id（联盟 ID）+ position_id（推广位 ID）
+  # 多多进宝：pid 形如 1234567_123456789
+  # ----------------------------------------------------------
+  ecommerce:
+    taobao_pid: ""                      # 淘宝客 pid
+    taobao_adzone_id: ""                # 淘宝客推广位 adzone_id
+    jd_union_id: ""                     # 京东联盟 union_id
+    jd_position_id: ""                  # 京东联盟推广位
+    pdd_pid: ""                         # 多多进宝 pid
+    disclosure: true                    # 卡片角标 + 页脚「推广链接」声明
+    # 角标文案：广告合规要求推广内容可识别，写「广告」最稳妥；
+    # 留空则整条角标不输出（只在 disclosure 为 false 时才有意义）
+    ad_text: "广告"
+
+# ------------------------------------------------------------
+# 推荐页  Recommend
+#
+# 页面地址：/recommend/（默认不进导航）
+# 页面文件：source/recommend/index.md，front-matter 必须是 layout: recommend
+# 模板 layout/recommend.ejs ｜ 样式 source/style/recommend-page.css
+# 数据 source/_data/recommend.yml
+#
+# 由装备页复制而来，版式、参数、数据格式与 equipment 段完全一致，
+# 只换了数据文件和文案：
+#   推荐页 → 文章推荐（auto 自动取文，发新文章自动更新）
+#   装备页 → 商品推荐（手写清单 + 电商推广链接）
+# 参数含义见上方 equipment 段的注释，这里不再重复。
+# ------------------------------------------------------------
+recommend:
+  enable: true                          # 页面总开关：false 时整页只显示提示
+  data: "recommend"                     # 数据文件 source/_data/<data>.yml
+  columns: 4                            # 桌面端一行几张（窄屏自动降成 3 / 2 / 1）
+  tips: "值得一读的东西"                 # Banner 上方小字
+  title: "我的推荐"                     # Banner 大标题
+  bottom_right: "友情链接"              # Banner 右下角按钮文字
+  bottom_right_link: "/links/"          # 按钮跳转地址
+  top_background: "/images/friend-circle.webp"    # Banner 背景图，建议 1200×400 以上横图
+  error_img: "/images/default-cover.webp"         # 封面图缺失或加载失败的兜底图
+  link_text_web: "前往官网"             # 外链卡片的链接文字
+  link_text_post: "查看文章"            # 站内卡片（指向文章）的链接文字
+
+# ------------------------------------------------------------
+# 关于页  About
+#
+# 页面地址：/about/（导航里「关于」那一项）
+# 页面文件：source/about/index.md，front-matter 必须是 layout: about
+# 模板 layout/about.ejs ｜ 样式 source/style/about-page.css
+#
+# 页面结构（自上而下）：
+#   标题栏 → 个人名片（头像 + 四角浮签）→ 关于我 →
+#   站内怎么逛（六个栏目内链）→ 十年之约 → 建站历程 → 站点数据 + 关于读者 →
+#   联系与足迹 → 回到顶部按钮
+#
+# 页面内容（文案、时间起点、SEO 摘要）全部在 source/_data/about.yml，
+# 平时只改那一个文件，这里只留总开关。
+#
+# 附带：layout/_partial/about-head.ejs 输出 canonical / og / JSON-LD，
+#       分享图 themes/bookshelf/source/images/about-og.jpg（1200×630）
+#       公众号版导出：node tools/about-to-wechat.js → working/about-wechat.html
+
+# 参数：
+#   enable     页面总开关，false 时显示提示文字而不是 404
+about:
+  enable: false
+
+# ------------------------------------------------------------
+# 分类/标签自定义字段（inc/category.php 后台分类字段的转写，
+# 对应 category.php / tag.php 中 get_term_meta 读取的
+# vt_full_width / vt_list_type / vt-thumbnail / full_width）
+# 按分类名（或标签名）映射：
+# term_meta:
+#   技术分享:
+#     vt_full_width: 0        # 0 跟随系统 / 1 强制全宽
+#     vt_list_type: 0         # 0 列表 / 1 卡片（卡片列数取 vt_columns）
+#     vt-thumbnail: /images/banner.jpg
+# ------------------------------------------------------------
+term_meta: {}
+
+# 评论层级深度（WP: get_option('thread_comments_depth', 3)）
+thread_comments_depth: 3
+
+# ------------------------------------------------------------
+# 评论系统 Comment system
+#
+# 主题原生的评论表单是从 WP 转写的空壳：没有后端，提交不会保存。
+# 接入 twikoo 后，文章页评论区整体替换为 twikoo（原生 DOM 不再输出）。
+# 自建 twikoo 的 env_id 直接填服务地址（末尾不要带斜杠）；
+# 腾讯云开发环境则填环境 ID（如 xxx-1a2b3c），并改用 twikoo.all.min.js。
+# ------------------------------------------------------------
+comment_provider: "twikoo"           # twikoo = 接入 twikoo；native = 主题原生空表单
+twikoo:
+  enable: true
+  env_id: "https://twikoo.liublog.cn"
+  lang: "zh-CN"                      # 评论区语言
+  js: "/lib/twikoo/twikoo.min.js"    # 本地化的前端库（版本与服务端 1.6.44 对齐）
+  path: ""                           # 评论标识；留空用 location.pathname（每篇文章唯一即可）
+  visitor: false                     # 是否用 twikoo 做阅读量统计（会额外请求）
+
+# ------------------------------------------------------------
+# 点赞 like（zan）
+#
+# 写法和上面的 twikoo 一致：enable 总开关，server 填服务地址（末尾不带斜杠），
+# js 是前端库地址，path 留空用 location.pathname。
+# 打开后，文章页那个「喜欢」按钮交给 zan：数字从服务端取，同一访客只算一次。
+# once 是多出来的那一个字段 —— 单次点击：
+#   true  点过就锁住，按钮不再响应；
+#   false 允许重复点击，但服务端仍按访客去重，数字不会重复增加。
+#
+# 阅读数不在这里配，它在下面 post_views 节：provider 选 zan，
+# 地址填同一个 server，读数和点赞共用一套服务、一个访客标识。
+# ------------------------------------------------------------
+zan:
+  enable: true
+  server: "https://zan.liublog.cn"
+  js: "https://zan.liublog.cn/api/js/zan.js?v=2.0.6"   # 服务端升级后改这个版本号，绕开浏览器 12 小时缓存
+  path: ""
+  once: true
+
+# ------------------------------------------------------------
+# 顶部设置  Header settings
+# （inc/config.php 顶部设置节）
+# ------------------------------------------------------------
+site_logo: "/images/logo.png"            # 网站LOGO Website Logo
+site_logo_darkness: "/images/logo-darkness.png"  # 网站LOGO(暗黑模式)
+show_admin_bar: false                # 顶部工具栏（WP 后台功能，静态站无效，保留字段）
+sticky_header: false                 # 固定顶部导航 Sticky Header
+
+# WP 导航菜单（register_nav_menus + wp_nav_menu）转写为下方数组，
+# 输出结构 1:1 复刻 inc/menu.php 中 MyMenu Walker：
+# <ul class="pc-nav"><li class="menu-item"><a href="...">标题</a>
+#   （有子项时追加 <i class="fa-solid fa-chevron-down"></i>，
+#     子级输出 <ul class="child-menu">）
+# ------------------------------------------------------------
+# 默认导航栏目（首页 / 分类 / 标签 / 归档 为 Hexo 必定生成的页面，
+# 开箱即可点击；如需增删直接编辑本数组，子菜单用 children）
+menu:
+  - title: "首页"
+    url: "/"
+  - title: "国学经典"
+    url: "/categories/国学经典/"
+  - title: "民间故事"
+    url: "/categories/民间故事/"
+  - title: "民俗传说"
+    url: "/categories/民俗传说/"
+  - title: "俗语俚语"
+    url: "/categories/俗语俚语/"
+  - title: "志怪传说"
+    url: "/categories/志怪传说/"
+  - title: "稗官野史"
+    url: "/categories/稗官野史/"
+  - title: "随笔杂记"
+    url: "/categories/随笔杂记/"
+  - title: "标签"
+    url: "/tags/"
+  - title: "归档"
+    url: "/archives/"
+#  - title: "朋友圈"                   # 朋友圈页，需要时取消下面两行注释
+#    url: "/fcircle/"
+  - title: "关于"
+    url: "/about/"
+#  - title: "分类"
+#    url: "/categories/"
+#    children:                        # 子菜单（最多 4 级，与 WP depth=4 一致）
+#      - title: "子菜单"
+#        url: "/categories/xxx/"
+
+# 侧边小工具 CategoryWidget 使用的菜单（SideMenu Walker：
+# 二级输出 <ul class="side-child-menu">，depth==1 时追加分类数量括号）
+side_menu: []
+#  - title: "技术"
+#    url: "/categories/tech/"
+#    count: 12                        # 分类文章数（SideMenu 中 (count) 输出）
+
+# 会员系统开关（WP get_option('users_can_register')）
+users_can_register: false
+
+# ------------------------------------------------------------
+# 底部设置  Footer setting
+# （inc/config.php 底部设置节）
+# ------------------------------------------------------------
+footer_bg_type: "light"              # 背景颜色 Background color（light 亮色 / darkness 暗色）
+footer_copyright: '&copy; 2026 <a href="/">老刘博客</a>　保留所有权利。'  # 底部版权 Footer copyright
+footer_js: ""                        # 自定义JS代码 Customize JS code
+sns_items:                           # SNS 链接（group 控件）
+  # icon 为可选项：填 Font Awesome 类名（fab = 品牌图标）。
+  # 站长名片（user_card）优先用 icon —— 矢量图清晰、跟随主题色、深浅模式自适应；
+  # 没填 icon 时回退用 image 那张 PNG。页脚始终用 image，不受此处影响。
+  - title: "Gitee"
+    icon: "fab fa-git-alt"
+    image: "/images/sns-gitee.png"
+    link: "https://gitee.com/"
+  - title: "Github"
+    icon: "fab fa-github"
+    image: "/images/sns-github.png"
+    link: "https://github.com/"
+  - title: "抖音"
+    icon: "fab fa-tiktok"
+    image: "/images/sns-douyin.png"
+    link: "https://douyin.com/"
+  - title: "Bilibili"
+    icon: "fab fa-bilibili"
+    image: "/images/sns-bilibili.png"
+    link: "https://bilibili.com/"
+  - title: "Weibo"
+    icon: "fab fa-weibo"
+    image: "/images/sns-weibo.png"
+    link: "https://weibo.com/"
+footer_links:                        # 底部链接（group 控件）
+  # 主题演示站的两条示例链接（VTHEME / Mirage theme）原先都指向本站域名，
+  # 等于自己链自己，已移除；需要加请按下面结构补。
+  - title: "Hexo"
+    link: "https://hexo.io/"
+
+# ------------------------------------------------------------
+# 文章设置  Article settings
+# （inc/config.php 文章设置节）
+# ------------------------------------------------------------
+show_copyright: true                 # 文章版权声明 Copyright Notice
+show_copyright_text: "本文为作者原创，未经授权禁止转载。转载请保留原文链接并注明出处。"  # 版权声明文本
+highlight_is_on: "1"                 # 代码高亮 Code highlighting（1 开 / 0 关）
+breadcrumbs_enabled: false           # 面包屑导航 Breadcrumbs
+qrcode_items:                        # 收款二维码 Payment QR code（group 控件）
+  - title: "扫描二维码"              # 标题 Title
+    image: "/images/qrcode.jpg"
+  - title: "扫描二维码"
+    image: "/images/qrcode.jpg"
+
+# ------------------------------------------------------------
+# 阅读次数  Post views
+# （2026-10-31 新增。静态站没有数据库，「计数」和「读数字」都得走
+#   第三方服务或自建接口，所以这里做成可切换的 provider。）
+#
+# 三处代码分工，改配置即可，不用动模板：
+#   _config.yml（本节）          开关与各服务的地址/参数
+#   scripts/post-views.js         构建时算好接口地址，塞进 data-* 属性
+#   source/js/post-views.js       运行时请求数字、填进页面、失败按配置隐藏
+#
+# provider 可选：
+#   static   —— 不联网，只显示文章 front-matter 里手写的 views（默认，等于关闭）
+#   busuanzi —— 不蒜子，一行脚本，页面 PV 由它自己写进 span
+#   vercount —— Vercount，脚本地址不同、接口同不蒜子，可迁移旧数据（推荐试水）
+#   waline   —— Waline 评论服务自带的 /comment?type=count 计数接口
+#   umami    —— Umami 自建版 API（云版不开放，必须自建）
+#   custom   —— 任意自建接口，返回 JSON，按 json_path 取数字
+#
+# 只填当前 provider 对应的那一小节就行，其余留着不影响。
+# ------------------------------------------------------------
+post_views:
+  enable: true                   # 总开关 On/Off（false = 不输出条目、不加载任何脚本，页面零外部请求）
+  provider: "zan"                # 计数服务 static / busuanzi / vercount / waline / umami / zan / custom
+  label: "次阅读"                # 数字后面的单位文案，留空则只显示数字
+  hide_on_error: true            # 接口失败时整条隐藏（false = 失败也占位显示 0）
+  min_display: 1                 # 少于这个数字就不显示，0 = 始终显示
+  cache_minutes: 30              # 同一浏览器内的缓存分钟数，0 = 每次刷新都请求
+  timeout_seconds: 12            # 等数字的上限秒数；不蒜子实测单是脚本就要 5~6 秒，别调太小
+
+  # ---- 不蒜子（国内老牌，近一年常 503，能忍再用）----
+  busuanzi:
+    script: "https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
+    id_prefix: "busuanzi"        # 脚本写入 #busuanzi_value_page_pv
+
+  # ---- Vercount（不蒜子兼容接口，可把旧数据迁过去）----
+  vercount:
+    script: "https://events.vercount.one/js"
+    id_prefix: "vercount"        # 脚本写入 #vercount_value_page_pv
+
+  # ---- Waline 评论服务自带的计数（需先有 Waline 服务端）----
+  waline:
+    server_url: ""               # 例 https://comment.example.com（末尾不要斜杠）
+    path_field: "pathname"       # pathname（站内相对路径）/ permalink（完整网址）
+
+  # ---- Umami（仅自建版；把 Share 链接或 API 地址填进 endpoint）----
+  # 例：https://umami.example.com/api/share/AbCdEf/stats?url={path}
+  # 数字位置按实际返回改 json_path：Umami v2 的 pageviews 在 data.pageviews
+  umami:
+    endpoint: ""
+    token: ""                    # 用 API Token 时填（以 Bearer 头发送）；Share 方式留空
+    json_path: "data.pageviews"
+    method: "GET"
+
+  # ---- zan（本项目：阅读和点赞共用一个服务，一次请求又写又读）----
+  # 打开文章页就上报一次，所以 cache_minutes 会自动置 0，填了也不生效。
+  # 跨域白名单里要加上博客域名，否则浏览器会拦掉 POST。
+  zan:
+    server: "https://zan.liublog.cn"   # 服务地址，末尾不要带斜杠
+
+  # ---- 自建接口（任何返回 JSON 的计数服务）----
+  # url 里的 {path} 会被替换成当前页路径（已 URL 编码）
+  custom:
+    url: ""                      # 例 https://api.example.com/views?path={path}
+    token: ""
+    json_path: "data.count"      # 例 data.count / 0.pv（数组下标直接写数字）
+    method: "GET"                # GET / POST（POST 时把 { path } 放进 JSON body）
+
+# ------------------------------------------------------------
+# 广告设置  Ad settings
+# （inc/config.php 广告节；vt_theme_ad($position) 按
+#   {position}_enable / {position}_code / {position}_code_pc 读取）
+# ------------------------------------------------------------
+ad_header_enable: false              # 头部广告 Header Ad
+ad_header_code: '<a href="https://www.liublog.cn" target="_blank"><img src="/images/ads-sm.jpg" style="width:100%"></a>'
+ad_header_code_pc: '<a href="https://www.liublog.cn" target="_blank"><img src="/images/ads.jpg" style="width:100%"></a>'
+ad_footer_enable: false              # 底部广告 Footer Ad
+ad_footer_code: '<a href="https://www.liublog.cn" target="_blank"><img src="/images/ads-sm.jpg" style="width:100%"></a>'
+ad_footer_code_pc: '<a href="https://www.liublog.cn" target="_blank"><img src="/images/ads.jpg" style="width:100%"></a>'
+ad_sidebar_enable: false             # 侧边栏广告 Sidebar Ad
+ad_sidebar_code: '<a href="https://www.liublog.cn" target="_blank"><img src="/images/ads-sm.jpg" style="width:100%"></a>'
+ad_sidebar_code_pc: '<a href="https://www.liublog.cn" target="_blank"><img src="/images/ads.jpg" style="width:100%"></a>'
+ad_single_top_enable: false          # 文章头部广告 Article Header Ad
+ad_single_top_code: '<a href="https://www.liublog.cn" target="_blank"><img src="/images/ads-sm.jpg" style="width:100%"></a>'
+ad_single_top_code_pc: '<a href="https://www.liublog.cn" target="_blank"><img src="/images/ads.jpg" style="width:100%"></a>'
+ad_single_bottom_enable: false       # 文章底部广告 Article Footer Ad
+ad_single_bottom_code: '<a href="https://www.liublog.cn" target="_blank"><img src="/images/ads-sm.jpg" style="width:100%"></a>'
+ad_single_bottom_code_pc: '<a href="https://www.liublog.cn" target="_blank"><img src="/images/ads.jpg" style="width:100%"></a>'
+
+# ------------------------------------------------------------
+# 邮箱设置  Email settings
+# （inc/config.php 邮箱节；WP 后端 SMTP 功能，静态站无效，保留字段）
+# ------------------------------------------------------------
+smtp_is_on: "1"
+smtp_host: ""
+smtp_port: "465"
+smtp_username: ""
+smtp_password: ""
+smtp_nicename: ""
+
+# ------------------------------------------------------------
+# 会员设置  Member settings
+# （inc/config.php 会员节；登录/注册为 WP 后端功能，静态站仅保留前端结构）
+# ------------------------------------------------------------
+# 登录/注册弹窗（_partial/login.ejs）
+# 从 WP 主题 1:1 转写而来，静态站没有用户系统，**默认关闭**：
+# 打开后每个页面都会多出 164 行表单 DOM，而表单没有提交后端；
+# 里面还带两条死链（隐私声明、服务条款）。真正要做会员功能时再开。
+login:
+  enable: false
+# ------------------------------------------------------------
+attempts_is_on: "1"                  # 防暴力 cracking（WP 后端功能）
+privacy_policy: "/privacy/"          # 隐私声明 Privacy Policy
+terms_of_service: "/privacy/"        # 服务条款 Terms of Service（与隐私说明同页）
+vip_avatar_upload: true              # 仅VIP可上传头像
+login_page_protection: false         # 登录页安全防护（WP 后端功能）
+
+# ------------------------------------------------------------
+# 侧边栏（对应 inc/widget.php 中 register_sidebar 注册的
+# default-sidebar / posts-sidebar，以及主题启用时写入的默认小工具列表
+# hot-list / image-article-list / tags-widget / user-widget，
+# 见 inc/switch.php vt_after_switch_action）。
+# 可用小工具 ID 与 WP 版一致：
+#   hot-list           [Mirage] 热门
+#   image-article-list [Mirage] 最新文章
+#   category-list      [Mirage] 分类列表
+#   user-widget        [Mirage] 用户卡片
+#   tags-widget        [Mirage] 标签
+#   recent-comments    [Mirage] 评论
+# ------------------------------------------------------------
+sidebar:
+  default-sidebar:                   # 列表页侧边栏（Default Sidebar）—— 首页同步使用
+    - hot-list
+    - category-list                  # 文章分类（新增；side_menu 为空时自动取站点分类）
+    - image-article-list
+    - tags-widget
+  posts-sidebar:                     # 文章页侧边栏（Post Sidebar）
+    - user-widget
+    - category-list                  # 文章分类（新增）
+    - image-article-list
+    - tags-widget
+
+# ------------------------------------------------------------
+# 站长名片  Author card
+# 模板：layout/_partial/widgets/user-widget.ejs
+# 样式：source/style/user-card.css
+#
+# 沿用原版主题 layout/_widget/user-card.ejs 的 card-info 结构
+# （widget.css 中注明「参考南方嘉木布局」）：背景图铺顶、头像左跨、
+# 昵称压在背景图上、三项统计横排、底部两个按钮 48% 分栏。
+#
+# 与 WP 版 UserWidget 的区别：原版输出「文章/评论/喜欢」三个数字，
+# 后两个依赖 WP 数据库（wp_comments、wp_vt_star），静态站恒为 0，
+# 会显示两个刺眼的 0。这里换成站内真实存在的 文章 / 标签 / 分类。
+#
+# ===== 可改参数一览 =====
+#   enable         开关，false 则整张卡片不输出
+#   avatar         头像路径（圆形裁切，建议正方形图 ≥ 160×160）
+#   nickname       昵称；留空 -> 站点 _config.yml 的 author
+#   description    一句话签名；留空 -> 站点 _config.yml 的 subtitle
+#   background     顶部背景图；留空 -> 不铺背景，卡片变纯色
+#   badge          头像右下角认证徽章开关
+#   certification  徽章图片；留空 -> 用内置的蓝色对勾（矢量，无图）
+#   social         右上角竖排三点 + 社交图标开关
+#   social_items   右上角那组图标的列表：title / icon / link（改地址就改这里）
+#                  整段留空 -> 回退用 sns_items，和页脚共用同一份
+#   buttons        底部按钮数组：icon / text / link / target
+#
+# 不可配置的部分：中间的「N 文章 / N 标签 / N 分类」三项目前是自动统计
+# 站内数量，写死不动；要改成别的字段需改模板。
+# ------------------------------------------------------------
+user_card:
+  enable: true                       # true 显示 / false 隐藏整张卡片
+  avatar: "/images/avatar.jpg"       # 头像，圆形裁切；建议正方形，160×160 以上
+  nickname: ""                       # 昵称；留空取站点 author（当前：老刘博客）
+  description: ""                    # 一句话签名；留空取站点 subtitle
+  background: "/images/user-card-bg.webp"  # 顶部背景图（95px 高，object-fit: cover）；留空则不铺，卡片改纯色底
+  badge: true                        # 头像右下角认证徽章：true 显示 / false 不显示
+  certification: ""                  # 徽章图片路径；留空则用内置蓝色对勾（不用准备图片）
+  social: true                       # 右上角竖排三点 + 点开后的社交图标；false 则连按钮一起不输出
+  social_items:                      # 卡片专属的社交图标（想改地址就改这里，页脚不受影响）
+    # 三项都必填：title = 悬停提示与无障碍标签；icon = Font Awesome 类名；link = 跳转地址
+    # 想删掉某个图标：把它的三行整段删掉即可，卡片宽度会自动收
+    # 想加一个：照抄一段改内容即可，建议别超过 5 个（侧栏窄，6 个会挤到头像）
+    #
+    # 常用品牌图标（fab 开头，主题自带 Font Awesome 6.7.2 Free 已有）：
+    #   fab fa-github          GitHub            fab fa-git-alt       Gitee
+    #   fab fa-bilibili        B 站              fab fa-weibo         微博
+    #   fab fa-qq              QQ                fab fa-weixin        微信
+    #   fab fa-steam           Steam             fab fa-tiktok        抖音
+    #   fab fa-x-twitter       X（推特）         fab fa-telegram       Telegram
+    #   fab fa-youtube         YouTube           fab fa-zhihu          知乎
+    # 邮件用 fas fa-envelope，地址写 mailto:you@example.com
+    #
+    # ★ 整段（连同 social_items: 这一行）全部删掉或留空，则自动回退用
+    #   上面「SNS 链接」那一节的 sns_items —— 也就是和页脚共用同一份配置。
+    - title: "Gitee"
+      icon: "fab fa-git-alt"
+      link: "https://gitee.com/"
+    - title: "Github"
+      icon: "fab fa-github"
+      link: "https://github.com/"
+    - title: "抖音"
+      icon: "fab fa-tiktok"
+      link: "https://douyin.com/"
+    - title: "Bilibili"
+      icon: "fab fa-bilibili"
+      link: "https://bilibili.com/"
+    - title: "Weibo"
+      icon: "fab fa-weibo"
+      link: "https://weibo.com/"
+  buttons:                           # 底部按钮，建议正好 2 个（第 1 个实心主色 / 其余描边）
+    # icon   Font Awesome 类名：fas = 实心图标，fab = 品牌图标，不填只显示文字
+    # text   按钮文字
+    # link   站内路径（如 /links/）或完整外链，自动判断
+    # target 可选，外链建议 "_blank"，模板会给它补 rel="noopener"
+    - icon: "fas fa-rss"
+      text: "订阅"
+      link: "/atom.xml"
+      target: "_blank"
+    - icon: "fas fa-link"
+      text: "友链"
+      link: "/links/"
+
+# ------------------------------------------------------------
+# 文章页侧栏目录 TOC（Hexo 版新增）
+# 目录以卡片形式吸在文章页右侧栏顶部；条目多时卡片内部滚动。
+# 单篇文章要关掉目录，在 front-matter 写 show_table: false 即可。
+# ------------------------------------------------------------
+toc_enable: true                       # 是否显示文章页侧栏目录
+toc_rows: 3                            # 静止时显示几条（超出的部分在卡片内滚动）
+toc_rows_hover: 6                      # 鼠标滑过 / 键盘聚焦时展开到几条
+
+# ============================================================
+# 板块统一配置  Sections
+# （Hexo 版新增：原 WP 主题这些标题/图标/条数是后台固定值或散在
+#   各处，此处集中到一个块里管理；旧写法 hot_title / tags_num 等
+#   扁平字段仍然有效，模板与旧配置都无需改动）
+#
+# 每项可用字段：
+#   show        true  = 显示该板块
+#               false = 关闭（全站隐藏，首页第 1 页也不输出）
+#   paged_hide  true  = 仅在首页第 1 页显示（/page/2/ 起隐藏）
+#               false = 每页都显示
+#   title       板块标题
+#   icon        FontAwesome 图标类名（如 fa-solid fa-fire；留空只显示文字）
+#   num         调用条数（0 = 不限制 / 显示全部）
+#
+# ★ 首页板块的显示顺序 = 下面 5 个首页板块的书写顺序，
+#   想换位置把整段移到别处即可。
+# ============================================================
+sections:
+
+  # ---------------- 首页板块（顺序即显示顺序）----------------
+  slider:                            # 幻灯片 + 幻灯片右侧两个推荐位
+    show: true
+    paged_hide: true
+  notices:                           # 顶部公告栏（铃铛 + 滚动公告）
+    show: true
+    paged_hide: true
+  hot:                               # 图文推荐（对应 WP hot_title）
+    show: true
+    paged_hide: true
+    title: "图文推荐"
+    icon: "fa-solid fa-fire"
+    num: 5
+  last:                              # 文章列表（含分页）—— 建议保持 true
+    show: true
+    paged_hide: false
+  links:                             # 友情链接（对应 WP links_title）
+    show: true
+    paged_hide: false
+    title: "友情链接"
+    icon: "fa-solid fa-link"
+
+  # ---------------- 侧栏小工具 ----------------
+  popular:                           # [Mirage] 热门
+    title: "热门文章"
+    icon: "fa-solid fa-ranking-star"
+    num: 5
+  recent:                            # [Mirage] 最新文章
+    title: "最新文章"
+    icon: "fa-solid fa-clock-rotate-left"
+    num: 5
+  tags:                              # [Mirage] 标签
+    title: "文章标签"
+    icon: "fa-solid fa-tags"
+    num: 6
+  category:                          # [Mirage] 文章分类列表
+    title: "文章分类"
+    icon: "fa-solid fa-folder-tree"
+    num: 0
+
+# ============================================================
+# SEO 设置（集中配置）
+#
+# 对应 WP：inc/config.php「SEO设置」+ templates/seo.php
+# Hexo 没有 WP 的 term meta，分类/标签的说明无处存放，
+# 因此统一放在这里，按名字对应到具体分类/标签页。
+#
+# 各页面实际使用哪一份数据：
+#   首页      → 本块 keywords / description（留空则自动取站点 _config.yml）
+#   分类页    → 下面 categories 里同名分类的配置
+#                （没列出的分类 → 自动生成“XX分类下的全部文章，共 N 篇”）
+#   标签页    → 下面 tags 里同名标签的配置
+#                （没列出的标签 → 自动生成“XX标签相关的全部文章，共 N 篇”）
+#   文章页    → 文章开头 front-matter 的 description / keywords
+#                （没写 → 取手动摘要 → 再没有就从正文自动提取）
+#   普通页面  → 页面 front-matter 的 description / keywords
+#   归档页    → 自动生成年月描述
+#
+# ★ 新增了分类想单独写介绍：在 categories 下照着加一段即可（键 = 分类名）。
+# ★ 不想维护：把 auto_generate 保持 true，未配置的分类自动有一句话。
+# ============================================================
+seo:
+  # ---------------- 站点级（首页使用） ----------------
+  keywords: ""                    # 留空 = 自动用站点 _config.yml 的 keywords
+  description: ""                 # 留空 = 自动用站点 _config.yml 的 description
+
+  auto_generate: true             # true = 未单独配置的分类/标签/归档自动生成描述
+  post_use_taxonomy: true         # true = 文章关键词额外纳入标签与分类（false = 只用 front-matter）
+
+  # ---------------- 分类页（键 = 分类名） ----------------
+  # 目前站内共 6 个分类，已按各分类下的实际文章内容填写。
+  categories:
+    民俗传说:                      # 20 篇
+      keywords: "民俗传说,传统节日,春节习俗,七夕传说,中秋节,民间习俗,年俗由来"
+      description: "民俗传说分类收录中国传统节日的由来与民间习俗，包括年兽与春节、牛郎织女与七夕、中秋嫦娥等经典传说，讲清每个节日背后真正的文化来历。"
+
+    志怪传说:                      # 9 篇
+      keywords: "志怪传说,山海经,聊斋志异,妖怪故事,民间怪谈,狐鬼花妖"
+      description: "志怪传说分类整理《山海经》《聊斋志异》等古籍中的妖怪神异故事与民间怪谈，讲述狐鬼花妖、奇闻异事背后的隐喻与民间信仰。"
+
+    俗语俚语:                      # 9 篇
+      keywords: "俗语俚语,民间谚语,歇后语,老话由来,俗语故事"
+      description: "俗语俚语分类讲述民间老话、谚语和歇后语的出处与故事，解释每句话是怎么来的、原本是什么意思，看懂中国人日常口语里的智慧与讲究。"
+
+    民间故事:                      # 7 篇
+      keywords: "民间故事,民间传说,中国故事,寓言故事,乡土故事"
+      description: "民间故事分类收录口耳相传的民间传说与寓言故事，人物鲜活、情节曲折，记录乡土社会里流传最广的善恶因果与处世道理。"
+
+    国学经典:                      # 7 篇
+      keywords: "国学经典,论语,孔子,古文名句,传统文化,诸子百家"
+      description: "国学经典分类分享《论语》等传统典籍的原文与解读，摘录孔子及诸子的名言金句，用通俗易懂的方式讲述其中的修身与处世之道。"
+
+    稗官野史:                      # 历史人物轶事
+      keywords: "稗官野史,历史人物轶事,名人趣事,野史笔记,正史与野史,古人逸闻"
+      description: "稗官野史分类收录历代笔记与民间流传的历史人物轶事，讲名人的怪癖、机智与翻车现场，并逐条对照正史辨别真假，看故事也看门道。"
+
+    随笔杂记:                      # 1 篇
+      keywords: "随笔杂记,生活随笔,个人记录,读书笔记"
+      description: "随笔杂记分类记录站长的日常思考与零散笔记，内容随性，多为生活观察、读书所得和写作心得。"
+
+  # ---------------- 标签页（键 = 标签名，可选） ----------------
+  # 未列出的标签会按 auto_generate 自动生成描述；需要单独写的照着下面加：
+  tags: {}
+  #  tags:
+  #    Manim:
+  #      keywords: "Manim,数学动画,Python 动画"
+  #      description: "Manim 标签下的全部文章，记录用 Python 制作数学动画的实践与踩坑。"
+
+# ============================================================
+# 自定义代码注入  Inject
+#
+# 作用：往全站每一个页面（首页/文章/独立页/分类/标签/归档/404）
+#      的 </head> 之前、</body> 之前插入自定义代码。
+#
+# 写法：
+#   - 每一条是一个 YAML 列表项，内容原样输出、不转义，可写任意 HTML
+#   - 一个元素里可以写多行（用 YAML 的 | 块或直接一行写完）
+#   - 路径一律写绝对路径（以 / 开头），指向主题或站点 source 下的文件，
+#     例如 source/style/custom.css -> /style/custom.css
+#   - 临时停用某条：在该行前加 # 注释掉，不必删除
+#   - 改完执行 npx hexo generate 生效；hexo s 会自动重建
+#
+# 建议分工：
+#   head   —— 样式表、字体、meta、统计脚本（此时 DOM 还没有，不能选元素）
+#   bottom —— 操作页面的脚本、埋点（DOM 已就绪，脚本可直接跑）
+# ============================================================
+inject:
+  # 插入到 </head> 之前
+  head:
+    # 自定义 css。media=defer + onload 是异步加载写法，不阻塞首屏；
+    # 需要样式立刻生效就用下面这条普通写法（二选一，另一条注释掉）
+    # - <link rel="stylesheet" href="/style/custom.css" media="defer" onload="this.media='all'">
+    - <link rel="stylesheet" href="/style/custom.css">
+
+  # 插入到 </body> 之前
+  bottom:
+    # 自定义 js
+    # - <script src="/js/xxx.js"></script>
+    - <script src="/js/flink.js"></script>

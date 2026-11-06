@@ -1,0 +1,386 @@
+<%
+/**
+ * post.ejs ← single.php（普通文章，1:1 转写）
+ *
+ * @author: vtheme <mail@vtheme.cn>
+ * @link https://www.liublog.cn
+ *
+ * 数据源差异说明（DOM 结构与类名完全一致）：
+ *  - set_post_views()/get_post_views() → front-matter views（helpers.js）
+ *  - vt_star 表（like/star 计数与状态）→ 静态站无数据库，恒为 0 / 未激活
+ *  - get_post_meta('_vt_article_full_width') → front-matter full_width: true
+ *  - get_post_meta('_vt_article_show_table') → front-matter show_table: true
+ *  - get_edit_post_link()（管理员编辑链接）→ 无后端，分支保留注释
+ */
+
+/* get_header() */
+%><%- partial('_partial/header') %><%
+
+var vt_config = vt_get_config();
+
+/* set_post_views(get_the_ID()); // 更新文章浏览次数（静态站无写入端） */
+
+var vt_post = page;
+var vt_author_id = page.author || config.author || '';
+
+// 点赞（zan）：配置见 _config.yml 的 zan 块，写法与 twikoo 一致
+var zan_cfg = vt_get_config('zan', {}) || {};
+var zan_on = !!(zan_cfg.enable && zan_cfg.server);
+
+// 为未登录用户生成唯一标识（WP: 'ip_' . md5($ip . $HTTP_USER_AGENT)，后端逻辑，静态站不适用）
+// $existing 查询 → 静态站恒无记录
+
+// 收藏数量（WP: type='star'）
+var star_counter = 0;
+
+// 当前用户是否收藏
+var is_star = false;
+
+// 获取文章缩略图（WP: 特色图片 → THEME_URL/images/banner.jpg）
+var thumbnail = page.cover || page.banner || '';
+var thumbnail_image = thumbnail ? thumbnail : url_for('/images/banner.jpg');
+
+// 全宽显示（WP: get_post_meta($post->ID, '_vt_article_full_width', true)）
+var full_width = page.full_width;
+var full_width_attribute = full_width ? 'full-width' : '';
+
+// 显示目录（WP: get_post_meta($post->ID, '_vt_article_show_table', true)）
+// 总开关在 _config.yml 的 toc_enable；单篇要关闭在 front-matter 写 show_table: false
+var show_table = page.show_table !== false && vt_get_config('toc_enable', true) !== false;
+
+// 目录条数：静止显示 toc_rows 条，鼠标滑过 / 键盘聚焦展开到 toc_rows_hover 条
+var toc_rows = parseInt(vt_get_config('toc_rows', 3), 10);
+var toc_rows_hover = parseInt(vt_get_config('toc_rows_hover', 6), 10);
+if (!(toc_rows > 0)) toc_rows = 3;
+if (!(toc_rows_hover > 0)) toc_rows_hover = 6;
+if (toc_rows_hover < toc_rows) toc_rows_hover = toc_rows;
+
+// 字数与阅读时长（中文按 400 字/分钟）
+var _plain_text = String(page.content || '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&[a-zA-Z#0-9]+;/g, ' ')
+    .replace(/[\s\u3000]+/g, '');
+var word_count = _plain_text.length;
+var read_minutes = Math.max(1, Math.round(word_count / 400));
+%>
+
+<div class="vt-reading-progress" id="vt-reading-progress"><span></span></div>
+
+
+<% if(vt_get_config('breadcrumbs_enabled')){ %>
+    <div class="main-container" <%= full_width_attribute %> >
+        <div class="main-widget">
+            <%- get_breadcrumbs() %>
+        </div>
+    </div>
+<% } %>
+
+<div class="main-container" <%= full_width_attribute %> >
+    <div class="main-widget">
+        <div class="article-widget">
+            <h1 class="article-title">
+                <%= page.title %>
+            </h1>
+
+            <div class="article-box">
+                <div class="meta-item author">
+                    <div class="avatar"><img src="<%- url_for(vt_get_custom_avatar_url()) %>" alt=""></div>
+                    <span><%= esc_html(page.author || config.author || '') %></span>
+                </div>
+
+                <div class="meta-item date" data-time="<%= esc_attr(date(page.date, 'YYYY-MM-DD HH:mm:ss')) %>">
+                    <i class="fa-solid fa-clock"></i><%= esc_html(vt_get_time(date(page.date, 'YYYY-MM-DD HH:mm:ss'))) %>
+                </div>
+
+                <div class='meta-item category'>
+                    <i class="fa-solid fa-folder"></i>
+                    <% (page.categories || {}).forEach(function(cat){ %>
+                    <a href="<%- esc_url(url_for(cat.path)) %>" class="category-meta-item"  target="_blank">
+                        <%= esc_html(cat.name) %>
+                    </a>
+                    <% }); %>
+                </div>
+
+                <% /* 阅读次数：开关与接口全在 _config.yml 的 post_views 节。
+                       关闭（或 provider: static）时只认 front-matter 的 views，
+                       没有就整条不输出，页面也不加载任何统计脚本；
+                       打开后由 scripts/post-views.js 算好地址写进 data-*，
+                       再交给 source/js/post-views.js 取数字、填入、失败隐藏。 */ %>
+                <% var vt_pv = vt_post_views(page); %>
+                <% var vt_pv_static = parseInt(get_post_views(page), 10) || 0; %>
+                <% if (vt_pv.enabled || vt_pv_static > 0) { %>
+                <div class="meta-item hit-conuter<%= vt_pv.enabled ? ' is-pending' : '' %>"
+                     data-views="<%= vt_pv.enabled ? '1' : '0' %>"
+                     data-provider="<%= vt_pv.provider %>"
+                     data-script-src="<%= vt_pv.scriptSrc %>"
+                     data-url="<%= vt_pv.url %>"
+                     data-token="<%= vt_pv.token %>"
+                     data-json-path="<%= vt_pv.jsonPath %>"
+                     data-method="<%= vt_pv.method %>"
+                     data-path="<%= vt_pv.path %>"
+                     data-min="<%= vt_pv.min %>"
+                     data-cache="<%= vt_pv.cache %>"
+                     data-timeout="<%= vt_pv.timeout %>"
+                     data-hide-on-error="<%= vt_pv.hideOnError ? '1' : '0' %>">
+                    <i class="fa-solid fa-eye"></i><span class="vt-view-count"<% if (vt_pv.spanId) { %> id="<%= vt_pv.spanId %>"<% } %>><%= vt_pv.enabled ? '' : vt_pv_static %></span><span class="vt-view-label"><%= vt_pv.label %></span>
+                </div>
+                <% } %>
+
+                <% /* 阅读时长：手机上「读完」二字被隐藏（.rt-tail），只留「约 N 分钟」，
+                       免得 5 条元信息在窄屏挤成三行；桌面仍显示完整说法。 */ %>
+                <div class='meta-item reading-time' title="全文 <%= word_count %> 字">
+                    <i class="fa-solid fa-book-open"></i>约 <%= read_minutes %> 分钟<span class="rt-tail">读完</span>
+                </div>
+
+                <% /* WP: current_user_can('manage_options') 管理员编辑链接（无后端，保留结构）
+                <a href="..." class="meta-item">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>编辑</span>
+                </a>
+                */ %>
+            </div>
+
+            <div class="article-content content-style line-numbers">
+                <%- vt_theme_ad('ad_single_top') %>
+
+                <%
+                /* the_content() —— Hexo 渲染后的文章正文 */
+                %>
+                <%- page.content %>
+
+                <% if(vt_config['show_copyright']){ %>
+                    <div class="copyright-content">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <%- vt_config['show_copyright_text'] %>
+                    </div>
+                <% } %>
+
+                <div class="vt-post-end"><span>全文完</span></div>
+
+                <% var post_tags = page.tags || {}; %>
+                <% if(post_tags && post_tags.length){ %>
+                    <div class="tags-widget">
+                        <% /* 原来的标签图标（fa-tag）已去掉：标签胶囊本身够醒目，
+                                多一个图标只是噪声。手机端最多露 3 个，见 bookshelf-extra.css */ %>
+                        <% post_tags.forEach(function(t){ %>
+                            <div class="tag-item">
+                                <a href="<%- esc_url(url_for(t.path)) %>" target="_blank">
+                                    <%= esc_html(t.name) %>
+                                </a>
+                            </div>
+                        <% }); %>
+                    </div>
+                <% } %>
+
+                <%- vt_theme_ad('ad_single_bottom') %>
+            </div>
+
+            <div class="content-action">
+                <div class="widget-action like"<% if (zan_on) { %> data-zan data-zan-scope="content"<% if (zan_cfg.path) { %> data-zan-key="<%= zan_cfg.path %>"<% } %><% } %>>
+                    <i class="fa-solid fa-heart"></i>
+                    <span><%= esc_html(__('Like')) %></span>
+                    <span class='number'<% if (zan_on) { %> data-zan-count<% } %>>0</span>
+                </div>
+
+                <div class="widget-action star <%= is_star ? ' active' : '' %>">
+                    <i class="fa-solid fa-star"></i>
+                    <span><%= esc_html(__('Star')) %></span>
+                    <span class='number'><%= esc_html(star_counter) %></span>
+                </div>
+
+                <div class="widget-action share-poster">
+                    <i class="fa-solid fa-share-nodes"></i>
+                    <span><%= esc_html(__('Share')) %></span>
+                </div>
+
+                <div class="widget-action coin">
+                    <i class="fa-solid fa-coins"></i>
+                    <span><%= esc_html(__('Donate')) %></span>
+                </div>
+            </div>
+        </div><!-- .article-widget -->
+
+
+        <div class="article-prev-next-nav">
+            <% var prev_post = page.prev; %>
+            <% var next_post = page.next; %>
+
+            <div class="article-nav prev-nav">
+                <div class="article-link">
+                    <% if (prev_post) { %>
+                        <a href="<%- esc_url(url_for(prev_post.path)) %>">
+                            <%= esc_html(prev_post.title) %>
+                        </a>
+                    <% } else { %>
+                        <%= esc_html(__('No more')) %>
+                    <% } %>
+                </div>
+                <div class="arrow-icon">
+                    <i class="fa-solid fa-chevron-left"></i>
+                    <%= esc_html(__('Previous')) %>
+                </div>
+            </div>
+
+            <div class="article-nav next-nav">
+                <div class="article-link">
+                    <% if (next_post) { %>
+                        <a href="<%- esc_url(url_for(next_post.path)) %>">
+                            <%= esc_html(next_post.title) %>
+                        </a>
+                    <% } else { %>
+                        <%= esc_html(__('No more')) %>
+                    <% } %>
+                </div>
+                <div class="arrow-icon">
+                    <%= esc_html(__('Next')) %> <i class="fa-solid fa-chevron-right"></i>
+                </div>
+            </div>
+        </div>
+
+        <%
+        /* comments_template() —— WP: comments_open() || get_comments_number()；
+           静态站按结构输出评论模块（表单/列表结构保留，提交依赖后端） */
+        %>
+        <%- partial('_partial/comments') %>
+
+        <% /* 推荐模块：标题与侧栏「最新文章」同款（图标 + 文字，vt_section_title） */ %>
+        <div class="related-posts-widget">
+            <div class="related-header">
+                <div class="widget-title"><%- vt_section_title(__('Recommendation'), 'fa-solid fa-star') %></div>
+            </div>
+            <div class="widget-content">
+                <%
+                // 获取当前文章的分类和标签
+                var post_categories = (page.categories || {}).toArray ? page.categories.toArray() : [];
+                var post_tags = (page.tags || {}).toArray ? page.tags.toArray() : [];
+
+                // 构建查询参数：同分类或同标签、排除当前文章、随机取 6 篇
+                // （WP: tax_query relation OR + orderby rand）
+                var related_cat_names = post_categories.map(function (c) { return c.name; });
+                var related_tag_names = post_tags.map(function (t) { return t.name; });
+
+                var related_posts = site.posts.toArray().filter(function (p) {
+                    if (p._id === page._id || p.path === page.path) return false;
+                    if (!related_cat_names.length && !related_tag_names.length) return true;
+                    var cats = p.categories ? p.categories.toArray() : [];
+                    var tagList = p.tags ? p.tags.toArray() : [];
+                    return cats.some(function (c) { return related_cat_names.indexOf(c.name) !== -1; }) ||
+                           tagList.some(function (t) { return related_tag_names.indexOf(t.name) !== -1; });
+                });
+
+                // orderby => 'rand'（生成期随机打乱后取 6 篇）
+                related_posts.sort(function () { return Math.random() - 0.5; });
+                related_posts = related_posts.slice(0, 6);
+                %>
+                <% if (related_posts.length) { %>
+                    <div class="related-posts-list">
+                        <% related_posts.forEach(function(p){ %>
+                            <!-- 使用 templates/card.php 模板显示相关文章 -->
+                            <%- partial('_partial/card', {post: p}) %>
+                        <% }); %>
+                    </div>
+                <% } else { %>
+                    <div class="no-related-posts">
+                        <%= esc_html(__('No related articles')) %>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div><!-- .main-widget -->
+
+    <% if(!full_width){ %>
+        <div class="sider sider-post">
+            <% if(show_table){
+                var toc = vt_toc(page.content);
+            %>
+                <% if(toc){ %>
+                    <div class="vt-toc-aside" id="vt-toc-aside" style="--vt-toc-rows: <%= toc_rows %>; --vt-toc-rows-hover: <%= toc_rows_hover %>;">
+                        <div class="vt-toc-aside__head">
+                            <div class="vt-toc-aside__title">
+                                <i class="fa-solid fa-list-ul vt-section-icon"></i><span>本文目录</span>
+                            </div>
+                            <span class="vt-toc-aside__count"><%= (toc.match(/<li/g) || []).length %> 节</span>
+                        </div>
+                        <div class="vt-toc-aside__body">
+                            <%- toc %>
+                        </div>
+                    </div>
+                <% } %>
+            <% } %>
+
+            <%- partial('_partial/sidebar', {name: 'posts-sidebar'}) %>
+
+            <%- vt_theme_ad('ad_sidebar') %>
+        </div>
+    <% } %>
+</div>
+
+<div class="vt-dialog" id="share-dialog" class="normal-dialog">
+    <div class="share-dialog-widget dialog-widget">
+        <a href="javascript:;" class="close-button close"><i class="fa-solid fa-xmark"></i></a>
+        <div class="share-card">
+            <div class="thumbnail">
+                <img src="<%- esc_url(thumbnail_image) %>" alt="">
+            </div>
+            <div class="share-card-body">
+                <h3><%= esc_html(page.title) %></h3>
+                <p><%= esc_html(mb_substr(vt_get_poster_excerpt(page), 0, 100)) %></p>
+            </div>
+            <div class="share-card-footer">
+                <div class="info">
+                    <img src="<%- esc_url(url_for(vt_get_config('site_logo', ''))) %>" alt="">
+                    <p><%= esc_html(__('Scan QR code')) %></p>
+                </div>
+                <div id="qrcode"></div>
+            </div>
+        </div>
+        <div class="top-layer"><%= esc_html(__('Generating...')) %></div>
+        <img src="" id='poster' class="hide" alt="" />
+    </div>
+</div>
+
+<div class="vt-dialog" id="coin-dialog" class="normal-dialog">
+    <div class="coin-dialog-widget dialog-widget">
+        <a href="javascript:;" class="close-button close">
+            <i class="fa-solid fa-xmark"></i>
+        </a>
+        <div class="coin-widget-list">
+            <% if (vt_config['qrcode_items'] && vt_config['qrcode_items'].length) { %>
+                <% vt_config['qrcode_items'].forEach(function(item){ %>
+                    <%
+                    var img = esc_url(item['image'] || '');
+                    var txt = esc_html(item['title'] || '');
+                    %>
+                    <div class="coin-widget">
+                        <img src="<%- url_for(item['image'] || '') %>" alt="">
+                        <div class="coin-info"><%= item['title'] || '' %></div>
+                    </div>
+                <% }); %>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+var post_object = {
+    post_url: "<%= esc_js(page.permalink || '') %>",
+};
+</script>
+
+<% if(vt_config['highlight_is_on']){ %>
+    <link rel="stylesheet" type="text/css" href="<%- url_for('/lib/prism/prism.css') %>">
+    <script type="text/javascript" src="<%- url_for('/lib/prism/prism.js') %>"></script>
+<% } %>
+
+<% /* 阅读进度条 + 图片放大（Hexo 版新增，原 WP 主题无对应脚本） */ %>
+<script type="text/javascript" src="<%- url_for('/js/bookshelf-extra.js') %>?v=<%= config.asset_version || '1' %>"></script>
+
+<% /* 阅读次数：只在开关打开时加载，关闭时页面零外部请求 */ %>
+<% if (vt_pv && vt_pv.enabled) { %>
+<script type="text/javascript" src="<%- url_for('/js/post-views.js') %>?v=<%= config.asset_version || '1' %>"></script>
+<% } %>
+
+<% /* 点赞（zan）：脚本统一在页脚加载（统计要覆盖全站），这里只输出按钮容器 */ %>
+
+<% /* get_footer() */ %>
+<%- partial('_partial/footer') %>

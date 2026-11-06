@@ -1,0 +1,176 @@
+
+/*
+ * 默认的样式
+ */
+html {
+  -webkit-text-size-adjust: none;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+ol,
+ul {
+  list-style: none;
+}
+
+img {
+  border: 0;
+  height: auto;
+  width: auto;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  font-size: var(--vt-font-size-base);
+  color: var(--vt-text-color);
+  letter-spacing: 0.8px;
+  /* position: relative; */
+  letter-spacing: 1px;
+  background-color: var(--vt-bg-color);
+  overflow-x: hidden;
+}
+
+body:before {
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0.3;
+  z-index: -1;
+  display: block;
+  position: fixed;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center center;
+  background-attachment: fixed;
+  content: "";
+}
+body.dark-mode:before{
+  display: none !important;
+}
+
+
+a {
+  color: var(--vt-text-color);
+  font-size: var(--vt-font-size-base);
+  text-decoration: none;
+  letter-spacing: 1px;
+}
+
+a:hover {
+  color: var(--vt-color-primary);
+}
+
+/**
+ * 文章页，文档页等 公共的喜欢，收藏 模块
+ */
+
+
+/*****************************************************************************/
+/**
+ * 面包屑
+ */
+.breadcrumbs {
+  width: auto;
+  line-height: 30px;
+  font-size: 14px;
+  color: var(--vt-text-color-grey);
+}
+.breadcrumbs i {
+  font-size: 14px;
+  vertical-align: 0px;
+  margin: 0 3px 0 0;
+}
+.breadcrumbs a {
+  font-size: 14px;
+  color: var(--vt-text-color-grey);
+}
+
+
+/**
+ * 404
+ */
+.page-no-found {
+  width: 100%;
+  max-width: 350px;
+  margin: 60px auto 250px auto;
+  color: var(--vt-text-color);
+}
+.page-no-found img {
+  width: 100%;
+}
+.page-no-found p {
+  font-size: 30px;
+  text-align: center;
+}
+.page-no-found a {
+  display: block;
+  width: 100px;
+  height: 30px;
+  color: var(--vt-text-color-inverse);
+  font-size: 13px;
+  margin: 50px auto 0px auto;
+  line-height: 30px;
+  text-align: center;
+  background-color: var(--vt-color-primary);
+  border-radius: 3px;
+}
+.page-no-found a:hover {
+  color: var(--vt-text-color-inverse);
+}
+
+/**
+ * 没有内容
+ */
+.no-content {
+  text-align: center;
+  padding: 100px 0px;
+  font-size: var(--vt-font-size-base);
+  user-select: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+.no-content img {
+  max-width: 150px;
+  margin: 20px auto;
+}
+.no-content p {
+  margin-top: 10px;
+  color: var(--vt-text-color-grey);
+}
+
+.search-title {
+  margin-top: 10px;
+  color: var(--vt-text-color);
+}
+
+.no-scroll {
+  overflow-y: hidden;
+}
+
+.no-scrollbar {
+  /* 隐藏滚动条（WebKit 浏览器：Chrome, Safari, Edge） */
+  -ms-overflow-style: none;  /* IE 和 Edge（旧版） */
+  scrollbar-width: none;     /* Firefox */
+
+  /* 可选：如果你希望完全禁止滚动（不推荐），用 overflow: hidden */
+  /* 但通常我们只是隐藏滚动条，仍允许滚动 */
+  overflow: auto; /* 或 overflow-y: auto; overflow-x: hidden; 等 */
+}
+
+/* WebKit 浏览器（Chrome, Safari, 新版 Edge）专用 */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+
+
+
+
+
+

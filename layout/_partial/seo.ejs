@@ -1,0 +1,341 @@
+<%
+/**
+ * seo.ejs ← templates/seo.php（1:1 转写，数据源按 Hexo 结构映射）
+ *
+ * WordPress 版实际包含两部分，此处合并输出：
+ *  1) <title>：WP 用 add_theme_support('title-tag')（inc/setting.php:42）
+ *     交给核心在 wp_head() 输出，主题自身不写；Hexo 无此机制，
+ *     故在此按 WP 默认标题规则输出（否则页面完全没有 title）。
+ *  2) <meta keywords/description>：templates/seo.php 原文逻辑。
+ *
+ * 取值优先级（WP 原文分支 → Hexo 数据源）：
+ *   is_home     ：vt_get_config('keywords'/'description')
+ *                 → _config.yml 的 seo.keywords / seo.description
+ *                 → 留空时自动取 Hexo 站点 config（title / description / keywords）
+ *   is_category ：get_term_meta($cat,'vt-keywords') + category_description()
+ *                 → seo.categories[分类名] → 未配置则按分类名与文章数生成
+ *   is_tag      ：single_tag_title() + tag_description()
+ *                 → seo.tags[标签名] → 未配置则自动生成
+ *   is_single   ：get_the_excerpt()
+ *                 → 文章 front-matter description → 手动摘要 → 正文自动提取
+ *   is_page     ：与文章同构（WP 单页也走 get_the_excerpt）
+ *   is_archive  ：WP 无 archive.php，按年月自动生成
+ */
+
+var seo_cfg = vt_get_config('seo', {}) || {};
+var site_cfg = (typeof config === 'object' && config) ? config : {};
+
+function seoText(v) {
+    return (v === null || v === undefined) ? '' : String(v);
+}
+function seoClean(v) {
+    return seoText(v).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+/* 描述截断：优先在句末标点处收尾，保持语义完整；找不到标点才硬截并加省略号 */
+function seoCut(v, max) {
+    var s = seoClean(v);
+    if (!s) return '';
+    var arr = Array.from(s);
+    if (arr.length <= max) return s;
+    var head = arr.slice(0, max);
+    var min = Math.floor(max * 0.6);
+    for (var i = head.length - 1; i >= min; i--) {
+        if (/[。！？!?；;]/.test(head[i])) return head.slice(0, i + 1).join('');
+    }
+    return head.join('').replace(/[,，、：:\s]+$/, '') + '…';
+}
+function seoBool(v, dft) {
+    if (v === null || v === undefined || v === '') return dft;
+    if (typeof v === 'boolean') return v;
+    var s = String(v).toLowerCase();
+    return !(s === 'false' || s === '0' || s === 'no' || s === 'off');
+}
+/* 多个来源合并为逗号分隔并去重（WP 各分支只取单一来源，此处合并） */
+function seoMerge() {
+    var out = [];
+    for (var i = 0; i < arguments.length; i++) {
+        var v = arguments[i];
+        if (!v) continue;
+        var arr = Array.isArray(v) ? v : String(v).split(/[,，、]/);
+        for (var j = 0; j < arr.length; j++) {
+            var s = seoClean(arr[j]).replace(/^["']|["']$/g, '');
+            if (s && out.indexOf(s) === -1) out.push(s);
+        }
+    }
+    return out.join(',');
+}
+/* 取集合（Query / 数组）中的 name 列表 */
+function seoNames(col) {
+    var out = [];
+    if (!col) return out;
+    var arr = [];
+    if (typeof col.toArray === 'function') arr = col.toArray();
+    else if (Array.isArray(col)) arr = col;
+    for (var i = 0; i < arr.length; i++) {
+        var it = arr[i];
+        if (!it) continue;
+        out.push(typeof it === 'string' ? it : (it.name || ''));
+    }
+    return out;
+}
+/* 取 seo.categories / seo.tags 下同名节点的配置 */
+function seoNode(map, name) {
+    if (!map || typeof map !== 'object' || !name) return {};
+    var node = map[name];
+    return (node && typeof node === 'object') ? node : {};
+}
+/* 分类/标签的总文章数（WP: $term->count；Hexo 取 site 里的 length，
+   分页后的 page.posts 只是当前页条数，不能用来报总数） */
+function seoTermCount(kind, name, fallback) {
+    try {
+        var col = site && site[kind];
+        if (col && typeof col.findOne === 'function') {
+            var node = col.findOne({ name: name });
+            if (node && typeof node.length === 'number') return node.length;
+        }
+    } catch (e) { /* 忽略，回落 */ }
+    return fallback;
+}
+/* 归档文章数：按年/月过滤站点文章（WP 归档页同样只统计该时段） */
+function seoArchiveCount(fallback) {
+    try {
+        if (!page.year) {
+            /* /archives/ 总归档：全部文章数（page.posts 只是当前页 10 条） */
+            if (site && site.posts && typeof site.posts.length === 'number') return site.posts.length;
+        } else if (site && site.posts) {
+            var q = site.posts.filter(function (p) {
+                var d = p.date;
+                if (!d || typeof d.year !== 'function') return false;
+                var yearOk = d.year() === Number(page.year);
+                var monthOk = page.month ? (d.month() + 1 === Number(page.month)) : true;
+                return yearOk && monthOk;
+            });
+            if (q && typeof q.length === 'number') return q.length;
+        }
+    } catch (e) { /* 忽略，回落 */ }
+    return fallback;
+}
+
+var seo_auto = seoBool(seo_cfg.auto_generate, true);
+
+/* ---------- 站点级：首页使用，其余页面兜底 ---------- */
+/* 旧字段 keywords / description（WP 原版名）仍然兼容：填了就用，空则继续往下回落 */
+var seo_flat_keywords = seoClean(vt_get_config('keywords', ''));
+var seo_flat_description = seoClean(vt_get_config('description', ''));
+
+var seo_site_keywords = seoMerge(seo_cfg.keywords, seo_flat_keywords, site_cfg.keywords, site_cfg.title);
+var seo_site_description = seoClean(seo_cfg.description) ||
+    seo_flat_description ||
+    seoClean(site_cfg.description) ||
+    seoClean(site_cfg.subtitle) ||
+    seoClean(site_cfg.title);
+
+var seo_keywords = seo_site_keywords;
+var seo_description = seo_site_description;
+var seo_page_title = '';
+
+var seo_site_title = seoClean(site_cfg.title);
+var seo_site_subtitle = seoClean(site_cfg.subtitle);
+var seo_paged = (typeof page !== 'undefined' && page && page.current) ? page.current : 1;
+
+/* 标题拼接：WP title-tag 默认规则（“当前页标题 - 站点名”） */
+function seoTitle(primary) {
+    var main = seoClean(primary);
+    if (!main) return seo_site_title;
+    if (!seo_site_title || main === seo_site_title) return main;
+    return main + ' - ' + seo_site_title;
+}
+
+if (typeof is_home === 'function' && is_home()) {
+
+    /* ---------- 首页：调用站点 ---------- */
+    seo_page_title = seo_paged > 1
+        ? seoTitle('第 ' + seo_paged + ' 页')
+        : (seo_site_subtitle ? (seo_site_title ? seo_site_title + ' - ' + seo_site_subtitle : seo_site_subtitle) : seo_site_title);
+    /* 第 2 页起补页码，避免与第 1 页内容重复 */
+    if (seo_paged > 1) {
+        seo_description = '第 ' + seo_paged + ' 页 - ' + seo_site_description;
+    }
+
+} else if (typeof is_category === 'function' && is_category()) {
+
+    /* ---------- 分类页：调用该分类（seo.categories 配置） ---------- */
+    var seo_cat_name = seoClean(page.category);
+    var seo_cat_node = seoNode(seo_cfg.categories, seo_cat_name);
+    var seo_cat_count = seoTermCount('categories', seo_cat_name, (page.posts && page.posts.length) ? page.posts.length : 0);
+
+    seo_page_title = seoTitle(seo_cat_name);
+    /* WP 原版分类页关键词只取 term meta，不与站点关键词混拼，避免关键词被稀释 */
+    seo_keywords = seoMerge(seo_cat_node.keywords, seo_cat_name);
+    seo_description = seoClean(seo_cat_node.description) ||
+        seoClean(page.description) ||
+        (seo_auto ? (seo_cat_name + '分类下的全部文章，共 ' + seo_cat_count + ' 篇。' + seo_site_title) : '') ||
+        seo_site_description;
+
+} else if (typeof is_tag === 'function' && is_tag()) {
+
+    /* ---------- 标签页：调用该标签（seo.tags 配置） ---------- */
+    var seo_tag_name = seoClean(page.tag);
+    var seo_tag_node = seoNode(seo_cfg.tags, seo_tag_name);
+    var seo_tag_count = seoTermCount('tags', seo_tag_name, (page.posts && page.posts.length) ? page.posts.length : 0);
+
+    seo_page_title = seoTitle(seo_tag_name);
+    seo_keywords = seoMerge(seo_tag_node.keywords, seo_tag_name);
+    seo_description = seoClean(seo_tag_node.description) ||
+        seoClean(page.description) ||
+        (seo_auto ? (seo_tag_name + '标签相关的全部文章，共 ' + seo_tag_count + ' 篇。' + seo_site_title) : '') ||
+        seo_site_description;
+
+} else if (typeof is_archive === 'function' && is_archive()) {
+
+    /* ---------- 归档页：按年月 ---------- */
+    var seo_arch_label = '';
+    if (page.year && page.month) seo_arch_label = page.year + '年' + page.month + '月';
+    else if (page.year) seo_arch_label = page.year + '年';
+    var seo_arch_count = seoArchiveCount((page.posts && page.posts.length) ? page.posts.length : 0);
+
+    seo_page_title = seoTitle(seo_arch_label || '归档');
+    seo_description = seoClean(page.description) ||
+        (seo_auto ? ((seo_arch_label || '全部') + '归档，共 ' + seo_arch_count + ' 篇文章。' + seo_site_title) : '') ||
+        seo_site_description;
+
+} else if (typeof is_post === 'function' && is_post()) {
+
+    /* ---------- 文章页：调用该文章 ---------- */
+    var seo_post_tags = seoNames(page.tags);
+    var seo_post_cats = seoNames(page.categories);
+
+    seo_page_title = seoTitle(page.title);
+    /* WP 单篇只取摘要；Hexo 额外用 front-matter keywords → 标签 → 分类，
+       seo.post_use_taxonomy: false 可关闭标签/分类参与关键词 */
+    var seo_use_tax = seoBool(seo_cfg.post_use_taxonomy, true);
+    /* WP 原版单篇关键词不含站点关键词，此处同样只取文章自身的标签/分类 */
+    seo_keywords = seoMerge(page.keywords,
+        seo_use_tax ? seo_post_tags : '',
+        seo_use_tax ? seo_post_cats : '');
+    /* WP: get_the_excerpt() —— 手动摘要优先，无则从正文提取 */
+    seo_description = seoClean(page.description) ||
+        seoClean(page.excerpt) ||
+        seoClean(page.content) ||
+        seo_site_description;
+
+} else if (typeof is_page === 'function' && is_page()) {
+
+    /* ---------- 普通页面：调用该页面 ---------- */
+    seo_page_title = seoTitle(page.title);
+    seo_keywords = seoMerge(page.keywords, seo_site_keywords);
+    seo_description = seoClean(page.description) ||
+        seoClean(page.excerpt) ||
+        seoClean(page.content) ||
+        '';
+
+    /* 分类总览页 / 标签总览页（layout: categories / tags）正文为空，
+       自动生成一句，避免与首页描述重复 */
+    if (!seo_description && seo_auto && (page.layout === 'categories' || page.layout === 'tags')) {
+        var seo_total = (page.layout === 'categories')
+            ? (site && site.categories ? site.categories.length : 0)
+            : (site && site.tags ? site.tags.length : 0);
+        seo_description = (page.layout === 'categories')
+            ? ('全部文章分类一览，共 ' + seo_total + ' 个分类，点击查看该分类下的全部文章。' + seo_site_title)
+            : ('全部文章标签一览，共 ' + seo_total + ' 个标签，点击查看该标签下的全部文章。' + seo_site_title);
+    }
+    if (!seo_description) seo_description = seo_site_description;
+
+} else {
+
+    /* ---------- 404 等未匹配页面 ---------- */
+    seo_page_title = seoTitle(page.title);
+}
+
+/* 兜底：任何分支都没取到时回到站点级 */
+if (!seo_keywords) seo_keywords = seo_site_keywords;
+if (!seo_description) seo_description = seo_site_description;
+
+/* 长度限制（seo.php 原文：keywords 200 / description 320）
+   描述按页面类型分别控制：
+   - 文章页 / 单页：120 字（首段摘要，百度约 78 汉字、Google 桌面约 155 字符）
+   - 首页 / 分类 / 标签 / 归档：160 字（手写描述，留出余量）
+   超出部分不会显示，只会稀释关键词权重，故截断而不拼接 */
+var seo_desc_max = 160;
+if (typeof is_post === 'function' && is_post()) seo_desc_max = 120;
+else if (typeof is_page === 'function' && is_page()) seo_desc_max = 120;
+
+seo_keywords = Array.from(seo_keywords).slice(0, 200).join('');
+seo_description = seoCut(seo_description, seo_desc_max);
+%>
+    <title><%= seo_page_title %></title>
+    <meta name="keywords" content="<%= seo_keywords %>">
+    <meta name="description" content="<%= seo_description %>">
+<%
+/* ============================================================
+ * canonical + 分享卡片（og / twitter）
+ *
+ * 原模板是 seo.php 的 1:1 转写，只输出 title/keywords/description
+ * ——这三样决定「搜索结果里长什么样」。但分享到微信、微博、Telegram、
+ * Twitter 时显示什么，靠的是 og: 那几行；canonical 则决定搜索引擎
+ * 认哪个地址是正式版本（带不带 index.html、http/https、多域名都能被
+ * 归并到一处）。改造前 946 个页面这两样全缺，只有 /about/ 单独补过。
+ * ============================================================ */
+
+var seo_site_url = String((config && config.url) || '').replace(/\/+$/, '');
+
+/* 绝对地址：优先 Hexo 内置的 full_url_for（会套用 url + root），
+   取不到就手工拼，保证线上输出的是 https://www.liublog.cn/... */
+function seoFull(p) {
+    var path = String(p == null ? '' : p);
+    try {
+        if (typeof full_url_for === 'function') return full_url_for(path);
+    } catch (e) {}
+    if (!path) path = '/';
+    if (path.charAt(0) !== '/') path = '/' + path;
+    return seo_site_url + path;
+}
+
+/* 404 页不输出 canonical：错误页被索引会把搜索结果带偏 */
+var seo_is_404 = (page.layout === '404' || String(page.title) === '404');
+
+/* 注意：Hexo 的 page.path 是「输出文件路径」，目录型页面会带 index.html
+ * （archives/index.html）。canonical 如果照抄就是 .../archives/index.html，
+ * 与 sitemap 里的 .../archives/ 不一致，等于自己制造两个地址。
+ * 这里把末尾的 index.html 去掉，还原成目录形式。 */
+var seo_path = String(page.path || '/').replace(/index\.html$/i, '');
+if (!seo_path) seo_path = '/';
+var seo_canonical = seo_is_404 ? '' : seoFull(seo_path);
+
+/* 分享图优先级：本页 cover → 本页 image → 站级分享卡（share_image）
+   → 主题默认图 → logo
+   本站文章都写了 cover，所以文章分享出去基本都是配图；
+   首页/归档/标签这类没有配图的页面，落到 1200×630 的分享卡上 */
+var seo_img_raw = page.cover || page.image || vt_get_config('share_image', '') || vt_get_config('default_image', '') || '/images/logo.png';
+if (Array.isArray(seo_img_raw)) seo_img_raw = seo_img_raw[0];
+var seo_img = String(seo_img_raw || '/images/logo.png');
+var seo_og_image = /^https?:\/\//i.test(seo_img) ? seo_img : seoFull(seo_img);
+
+var seo_is_article = (typeof is_post === 'function' && is_post());
+var seo_og_type = seo_is_article ? 'article' : 'website';
+var seo_locale = String((config && config.language) || 'zh-CN').replace(/-/g, '_');
+var seo_site_name = String((config && config.title) || '');
+%>
+<% if (seo_canonical) { %>
+    <link rel="canonical" href="<%- esc_url(seo_canonical) %>">
+<% } %>
+    <meta property="og:type" content="<%= seo_og_type %>">
+    <meta property="og:site_name" content="<%= seo_site_name %>">
+    <meta property="og:title" content="<%= seo_page_title %>">
+    <meta property="og:description" content="<%= seo_description %>">
+    <meta property="og:url" content="<%- esc_url(seo_canonical || seo_site_url) %>">
+    <meta property="og:image" content="<%- esc_url(seo_og_image) %>">
+    <meta property="og:locale" content="<%= seo_locale %>">
+<% if (seo_is_article) { %>
+    <meta property="article:published_time" content="<%= date(page.date, 'YYYY-MM-DDTHH:mm:ssZ') %>">
+<% if (page.updated) { %>
+    <meta property="article:modified_time" content="<%= date(page.updated, 'YYYY-MM-DDTHH:mm:ssZ') %>">
+<% } %>
+<% (page.categories || []).forEach(function (cat) { %>
+    <meta property="article:section" content="<%= cat.name %>">
+<% }); %>
+<% } %>
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<%= seo_page_title %>">
+    <meta name="twitter:description" content="<%= seo_description %>">
+    <meta name="twitter:image" content="<%- esc_url(seo_og_image) %>">

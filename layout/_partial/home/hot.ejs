@@ -1,0 +1,89 @@
+<%
+/**
+ * hot.ejs ← templates/home/hot.php（1:1 转写）
+ *
+ * 数据源差异说明：
+ *  - WP: hot_post_ids 为文章数字 ID，hot_cat_id 为分类 ID；
+ *    Hexo 静态站分别对应文章 slug 与分类名（在 _config.yml 配置）。
+ *  - vt_get_thumbnail_url() → helpers.js 同名函数。
+ */
+var hot_posts = [];
+
+// 调用条数（新增）：_config.yml hot_num，0 表示不限制
+var hot_num = parseInt(vt_get_config('hot_num', 6), 10);
+if (isNaN(hot_num)) hot_num = 6;
+
+// 优先使用文章 ID 列表
+var hot_post_ids = (vt_get_config('hot_post_ids', '') || '').trim();
+
+var post_slugs = [];
+if (hot_post_ids) {
+    // 解析 ID 列表
+    post_slugs = hot_post_ids.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+}
+
+if (post_slugs.length) {
+    // 按 ID 列表顺序取文章（WP: post__in + orderby post__in）
+    site.posts.toArray().forEach(function (p) {
+        if (post_slugs.indexOf(p.slug) !== -1) {
+            hot_posts.push({
+                slug: p.slug,
+                title: p.title,
+                link: url_for(p.path),
+                thumbnail: vt_get_thumbnail_url(p)
+            });
+        }
+    });
+    hot_posts.sort(function (a, b) {
+        return post_slugs.indexOf(a.slug) - post_slugs.indexOf(b.slug);
+    });
+} else {
+    // 如果 ID 列表为空，则根据分类获取最新文章
+    var hot_cat_id = vt_get_config('hot_cat_id', []);
+    var hot_cat_names = Array.isArray(hot_cat_id) ? hot_cat_id : (hot_cat_id ? [hot_cat_id] : []);
+
+    var candidates = site.posts.toArray().sort(function (a, b) { return b.date - a.date; });
+    var found = 0;
+    var limit = hot_num > 0 ? hot_num : candidates.length;
+    for (var i = 0; i < candidates.length && found < limit; i++) {
+        var p = candidates[i];
+        if (hot_cat_names.length) {
+            var cats = (p.categories || {}).toArray ? p.categories.toArray() : [];
+            var hasCat = cats.some(function (c) { return hot_cat_names.indexOf(c.name) !== -1; });
+            if (!hasCat) continue;
+        }
+        hot_posts.push({
+            title: p.title,
+            link: url_for(p.path),
+            thumbnail: vt_get_thumbnail_url(p)
+        });
+        found++;
+    }
+}
+
+// 调用条数上限（两个分支统一生效，hot_num=0 时不限制）
+if (hot_num > 0) {
+    hot_posts = hot_posts.slice(0, hot_num);
+}
+%>
+
+<div class="main-container">
+    <div class="hot-widget">
+        <div class="header">
+            <div class="title"><%- vt_section_title(vt_get_config('hot_title', ''), vt_get_config('hot_icon', '')) %></div>
+        </div>
+        <div class="body">
+            <div class="hot-list">
+                <% hot_posts.forEach(function(post){ %>
+                    <a class="hot-item" href="<%- esc_url(post.link) %>" target="_blank">
+                        <div class="hot-thumbnail">
+                            <img src="<%- esc_url(post.thumbnail) %>" alt="<%= esc_attr(post.title) %>">
+                        </div>
+                        <div class="hot-mask"></div>
+                        <div class="hot-title"><%= esc_html(post.title) %></div>
+                    </a>
+                <% }); %>
+            </div>
+        </div>
+    </div>
+</div>
