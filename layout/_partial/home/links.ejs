@@ -17,10 +17,12 @@ var links = vt_get_config('links_data', []);
         <% if (links.length) { %>
             <% links.forEach(function(link){ %>
             <div class="link-item">
-                <%
-                var link_target = link.target ? 'target="' + esc_attr(link.target) + '"' : '';
-                %>
-                <a href="<%- esc_url(link.url) %>" <%= link_target %> rel="nofollow">
+                <% /* target 必须直接写成属性：先拼成字符串再输出会被 EJS 转义成
+                       target=&#34;_blank&#34;，DOM 里 a.target 变成带引号的 "_blank"，
+                       浏览器会开一个叫 "_blank" 的新窗口，noopener 也一起丢了。
+                       注意注释里不要出现 EJS 的尖括号加百分号，会被当成新标签。 */ %>
+                <a href="<%- esc_url(link.url) %>"
+                   <% if (link.target) { %>target="<%= link.target %>" rel="nofollow noopener"<% } else { %>rel="nofollow"<% } %>>
                 </a>
                 <% if (link.image) { %>
                     <img src="<%- esc_url(url_for(link.image)) %>" alt="<%= esc_attr(link.name) %>">

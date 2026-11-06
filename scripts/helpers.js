@@ -181,6 +181,60 @@ hexo.extend.helper.register('vt_get_config', function (key, defaultValue) {
 });
 
 /* ============================================================
+ * vt_bool($key, $default) —— 把配置项读成真正的布尔值
+ *
+ * 为什么需要它：yml 里的开关常写成 "1" / "0" 字符串，
+ * 而 JS 里字符串 "0" 是真值 —— if(vt_get_config('x')) 永远成立，
+ * 于是「关掉」不生效。此函数统一按 WP 的语义解析：
+ *   真：true / "1" / "true" / "yes" / "on" / 非零数字
+ *   假：false / "0" / "false" / "no" / "off" / "" / null
+ *
+ * $key 支持点号路径（如 'user_card.badge'），先查扁平键再走路径，
+ * 与 vt_get_config 的查找顺序一致。
+ * ============================================================ */
+function deepGet(obj, dotted) {
+  var parts = String(dotted).split('.');
+  var node = obj;
+  for (var i = 0; i < parts.length; i++) {
+    if (node === null || typeof node !== 'object') return undefined;
+    if (!Object.prototype.hasOwnProperty.call(node, parts[i])) return undefined;
+    node = node[parts[i]];
+  }
+  return node;
+}
+
+/* 供模板 helper 与主题脚本共用：把配置值解析成布尔 */
+function vtBool(config, key, defaultValue) {
+  var dft = defaultValue !== false;
+  if (key === null || key === undefined) return dft;
+
+  var val;
+  if (Object.prototype.hasOwnProperty.call(config, key)) {
+    val = config[key];
+  } else {
+    val = deepGet(config, key);
+  }
+
+  if (val === undefined || val === null || val === '') return dft;
+  if (typeof val === 'boolean') return val;
+  if (typeof val === 'number') return val !== 0;
+
+  var s = String(val).trim().toLowerCase();
+  if (s === '0' || s === 'false' || s === 'no' || s === 'off') return false;
+  if (s === '1' || s === 'true' || s === 'yes' || s === 'on') return true;
+  return !!val;
+}
+
+hexo.extend.helper.register('vt_bool', function (key, defaultValue) {
+  return vtBool(this.theme || {}, key, defaultValue);
+});
+
+/* vt_flag_str($key, $default) —— 输出 'true' / 'false' 字面量（给内联脚本用） */
+hexo.extend.helper.register('vt_flag_str', function (key, defaultValue) {
+  return vtBool(this.theme || {}, key, defaultValue) ? 'true' : 'false';
+});
+
+/* ============================================================
  * vt_section_title($title, $icon) —— 【新增】板块标题（图标 + 文字）
  *
  * 原 WP 主题的板块标题只有纯文字。此处为新增能力：

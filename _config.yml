@@ -23,14 +23,12 @@
 # （inc/config.php 第一节）
 # ------------------------------------------------------------
 basic_style: "#f45d1d"              # 主题色调 Theme color tone（default '#007aff'）
-update_is_on: "0"                   # 更新提示 Update prompt（WP 后台功能，静态站无效，保留字段）
 page_data_type: "0"                 # 显示页面参数 Display page parameters（0 隐藏 / 1 显示 / 2 console.log）
-editor_type: "1"                    # 编辑器 Editor（WP 后台功能，静态站无效，保留字段）
 dark_mode_type: "1"                 # 暗黑模式 Dark mode（1 开启 / 0 关闭 / 2 跟随系统）
 default_image: "/images/default.jpg"   # 默认图片 Default Image（列表卡片无封面时的占位，16:9）
 share_image: "/images/share-card.jpg"  # 分享卡 Social Share Card（og:image 兜底，1200×630）
 background_image: ""                # 背景图片 Background image
-lazy_load_enabled: true             # 懒加载 Lazy Loading
+lazy_load_enabled: true             # 懒加载 Lazy Loading（false = 卡片图直接输出真实 src，不等脚本）
 
 # ------------------------------------------------------------
 # SEO 设置  SEO settings
@@ -44,8 +42,11 @@ description: ""                     # 描述 Description（已废弃 → seo.des
 # （inc/config.php home_layout，sorter 控件：
 #   WP 中 enabled/disabled 两个容器，此处用数组顺序表示显示顺序）
 # 白名单与 index.php 一致：hot / last / links / notices / slider
-# 说明：Hexo 版的显示顺序、显示开关、翻页隐藏已统一由文件末尾的
-#       「板块统一配置 sections」决定，本字段仅作 WP 原版兼容保留。
+# 说明：
+#   显示顺序 = 这里的顺序（没列出的板块按 sections 的书写顺序排在后面）
+#   显示开关 = sections.<板块>.show
+#   —— 改动这里立刻反映到首页；漏写一个板块也不会让它消失，
+#      只是排到最后，想隐藏请用 sections 的 show。
 # ------------------------------------------------------------
 home_layout:
   enabled:
@@ -61,7 +62,7 @@ home_layout:
 # （inc/config.php 第三节；slider.php 中读取 slider_height 默认 300）
 # ------------------------------------------------------------
 slider_height: 300                  # 幻灯片高度（slider.php: vt_get_config('slider_height', 300)）
-slider_autoplay: true               # 自动播放 Autoplay（CSF default true）
+slider_autoplay: true               # 自动播放 true=5 秒一张 / false=不自动播 / 填数字=毫秒（如 8000）
 slider_effect: "slide"              # 切换效果 Slider Effects（slide/fade/cube/coverflow/flip/cards/creative）
 slider_items:                       # 幻灯片列表 Slide list（group 控件）
   - title: "年兽的传说：春节的由来"   # 标题 Title
@@ -112,10 +113,10 @@ hot_post_ids: ""                    # 文章ID列表 Article ID list（逗号分
 # 首页设置 - 最新文章  Latest
 # （inc/config.php 最新文章节；posts_ids/posts_not_in_ids 在 Hexo 中填分类名）
 # ------------------------------------------------------------
-posts_ids: []                       # 文章分类 Category（仅显示这些分类下的文章，空=全部）
-posts_not_in_ids: []                # 排除分类 Exclude classification
-posts_auto_load: "1"                # 自动加载 Auto Load（1 开 / 0 关）
-posts_auto_load_limit: "1"          # 自动加载次数 Automatic loading times（0 为不限制）
+posts_ids: []                       # 只显示这些分类下的文章（填分类名，空=全部）—— 在分页前过滤，页码与篇数不会错位
+posts_not_in_ids: []                # 排除这些分类（填分类名）
+posts_auto_load: "1"                # 自动加载：1 开 / 0 关（滚动到底自动追加下一页，会隐藏底部分页条）
+posts_auto_load_limit: "1"          # 自动加载次数：再自动加载几页，0 = 一直加载到最后一页
 full_width: false                   # 全宽 Full width（最新文章模块）
 list_type: "0"                      # 布局 Layout（0 列表 List / 1 卡片 Card）
 vt_columns: "3"                     # 每行列数 Number of rows and columns（2/3/4/5）
@@ -125,6 +126,8 @@ vt_columns: "3"                     # 每行列数 Number of rows and columns（
 # （inc/config.php 友情链接节；links_switcher 对应 WP 链接管理开关）
 # 标题 / 图标 → 见文件末尾 sections.links（title/icon）
 # ------------------------------------------------------------
+# 首页友情链接的第二个开关：与 sections.links.show 并联，任一为 false 都不显示。
+# （老配置只认这一个，新配置用 sections 更直观；留着是为了不让老配置悄悄失效）
 links_switcher: true                # Links 开关
 
 # Hexo 静态站没有 WP 链接管理器（get_bookmarks），
@@ -292,6 +295,29 @@ equipment:
     ad_text: "广告"
 
 # ------------------------------------------------------------
+# 即刻短文 / 说说页  Vignette
+#
+# 页面地址：/vignette/
+# 页面文件：source/vignette/index.md，front-matter 必须是 layout: vignette
+# 模板 layout/vignette.ejs ｜ 样式 source/style/vignette-page.css
+# 数据 source/_data/vignette.yml
+#
+# 每条说说：title / date / author{name,avatar,link} / content / images[]
+#   images 写 0、1、2、4 张都行；一屏显示 2 张，多出来的用左右按钮翻页。
+#   字段说明见 source/_data/vignette.yml 开头。
+#
+# 点赞复用 zan 段：每条说说按「日期-标题」生成独立 key，
+# 没开 zan（或填了 like: false）时心形只显示 0，不产生任何请求。
+# ------------------------------------------------------------
+vignette:
+  enable: true                          # 页面总开关：false 时整页只显示提示
+  title: "即刻短文"                     # 页面大标题
+  tips: "随时随地，分享生活"            # 标题上方小字
+  per_page: 8                           # 首屏显示几条，其余点「加载更多」
+  avatar: "/images/avatar.jpg"          # 作者没填头像时的兜底图
+  like: true                            # 显示心形（还需 zan.enable 才会真计数）
+
+# ------------------------------------------------------------
 # 推荐页  Recommend
 #
 # 页面地址：/recommend/（默认不进导航）
@@ -340,7 +366,7 @@ recommend:
 # 参数：
 #   enable     页面总开关，false 时显示提示文字而不是 404
 about:
-  enable: false
+  enable: true
 
 # ------------------------------------------------------------
 # 分类/标签自定义字段（inc/category.php 后台分类字段的转写，
@@ -401,7 +427,6 @@ zan:
 # ------------------------------------------------------------
 site_logo: "/images/logo.png"            # 网站LOGO Website Logo
 site_logo_darkness: "/images/logo-darkness.png"  # 网站LOGO(暗黑模式)
-show_admin_bar: false                # 顶部工具栏（WP 后台功能，静态站无效，保留字段）
 sticky_header: false                 # 固定顶部导航 Sticky Header
 
 # WP 导航菜单（register_nav_menus + wp_nav_menu）转写为下方数组，
@@ -496,7 +521,7 @@ footer_links:                        # 底部链接（group 控件）
 # ------------------------------------------------------------
 show_copyright: true                 # 文章版权声明 Copyright Notice
 show_copyright_text: "本文为作者原创，未经授权禁止转载。转载请保留原文链接并注明出处。"  # 版权声明文本
-highlight_is_on: "1"                 # 代码高亮 Code highlighting（1 开 / 0 关）
+highlight_is_on: "1"                 # 代码高亮 Code highlighting（1 开 / 0 关；也认 true/false）
 breadcrumbs_enabled: false           # 面包屑导航 Breadcrumbs
 qrcode_items:                        # 收款二维码 Payment QR code（group 控件）
   - title: "扫描二维码"              # 标题 Title
@@ -593,17 +618,6 @@ ad_single_bottom_code: '<a href="https://www.liublog.cn" target="_blank"><img sr
 ad_single_bottom_code_pc: '<a href="https://www.liublog.cn" target="_blank"><img src="/images/ads.jpg" style="width:100%"></a>'
 
 # ------------------------------------------------------------
-# 邮箱设置  Email settings
-# （inc/config.php 邮箱节；WP 后端 SMTP 功能，静态站无效，保留字段）
-# ------------------------------------------------------------
-smtp_is_on: "1"
-smtp_host: ""
-smtp_port: "465"
-smtp_username: ""
-smtp_password: ""
-smtp_nicename: ""
-
-# ------------------------------------------------------------
 # 会员设置  Member settings
 # （inc/config.php 会员节；登录/注册为 WP 后端功能，静态站仅保留前端结构）
 # ------------------------------------------------------------
@@ -614,11 +628,8 @@ smtp_nicename: ""
 login:
   enable: false
 # ------------------------------------------------------------
-attempts_is_on: "1"                  # 防暴力 cracking（WP 后端功能）
 privacy_policy: "/privacy/"          # 隐私声明 Privacy Policy
 terms_of_service: "/privacy/"        # 服务条款 Terms of Service（与隐私说明同页）
-vip_avatar_upload: true              # 仅VIP可上传头像
-login_page_protection: false         # 登录页安全防护（WP 后端功能）
 
 # ------------------------------------------------------------
 # 侧边栏（对应 inc/widget.php 中 register_sidebar 注册的
@@ -635,6 +646,7 @@ login_page_protection: false         # 登录页安全防护（WP 后端功能�
 # ------------------------------------------------------------
 sidebar:
   default-sidebar:                   # 列表页侧边栏（Default Sidebar）—— 首页同步使用
+    - user-widget                    # 站长名片（个人信息卡片），置顶；开关见下方 user_card.enable
     - hot-list
     - category-list                  # 文章分类（新增；side_menu 为空时自动取站点分类）
     - image-article-list
@@ -779,19 +791,29 @@ sections:
     icon: "fa-solid fa-link"
 
   # ---------------- 侧栏小工具 ----------------
+  # 侧栏显示哪几个由 _config.yml 的 sidebar 数组决定（增删条目），
+  # 这里的 show 是「临时开关」：写 false 就隐藏，不用改 sidebar 数组。
+  #   popular → hot-list（热门文章）
+  #   recent  → image-article-list（最新文章）
+  #   tags    → tags-widget（文章标签）
+  #   category→ category-list（文章分类）
   popular:                           # [Mirage] 热门
+    show: true
     title: "热门文章"
     icon: "fa-solid fa-ranking-star"
     num: 5
   recent:                            # [Mirage] 最新文章
+    show: true
     title: "最新文章"
     icon: "fa-solid fa-clock-rotate-left"
     num: 5
   tags:                              # [Mirage] 标签
+    show: true
     title: "文章标签"
     icon: "fa-solid fa-tags"
     num: 6
   category:                          # [Mirage] 文章分类列表
+    show: true
     title: "文章分类"
     icon: "fa-solid fa-folder-tree"
     num: 0

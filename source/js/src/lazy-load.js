@@ -5,8 +5,12 @@
  */
 
 // 配置参数
+// enabled 由 _config.yml 的 lazy_load_enabled 决定：
+// footer.ejs 在 index.js 之前注入 window.vtLazyLoad = true/false
 const LAZY_LOAD_CONFIG = {
-    enabled: true, // 默认启用
+    enabled: (typeof window !== 'undefined' && typeof window.vtLazyLoad === 'boolean')
+        ? window.vtLazyLoad
+        : true,
     offset: 100,   // 预加载偏移量(px)
     rootMargin: '100px 0px 100px 0px' // 视口边距
 };
@@ -39,7 +43,9 @@ function modernLazyLoad() {
         rootMargin: LAZY_LOAD_CONFIG.rootMargin
     });
 
-    images.forEach(img => imageObserver.observe(img));
+    images.forEach(img => {
+        if (!img.classList.contains('loaded')) imageObserver.observe(img);
+    });
 }
 
 /**
@@ -122,7 +128,11 @@ function loadImage(img) {
 export function lazyLoad() {
     // 检查是否启用懒加载
     if (!LAZY_LOAD_CONFIG.enabled) {
-        console.log('Lazy loading is disabled');
+        /* 关闭时模板已直接输出真实 src；这里再兜一层，
+           防止缓存里的旧 HTML（仍带 data-src）出现永远不加载的图 */
+        document.querySelectorAll('img[data-src]').forEach(function (img) {
+            img.src = img.dataset.src;
+        });
         return;
     }
 
@@ -138,11 +148,17 @@ export function lazyLoad() {
  * 初始化懒加载
  */
 function initLazyLoad() {
+    if (!LAZY_LOAD_CONFIG.enabled) return;
     if (isIntersectionObserverSupported()) {
         modernLazyLoad();
     } else {
         legacyLazyLoad();
     }
+}
+
+// 自动加载（无限滚动）追加新卡片后要重新接管，暴露到全局
+if (typeof window !== 'undefined') {
+    window.vtReinitLazyLoad = initLazyLoad;
 }
 
 /**

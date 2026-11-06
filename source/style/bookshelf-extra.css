@@ -1384,3 +1384,59 @@ body.dark-mode .twikoo .tk-comments-container > .tk-comment {
     font-weight: bold;
     color: var(--vt-text-color);
 }
+
+
+/* ============================================================
+ * 明暗切换图标：改为 VitePress 同款线性图标（2026-11-06）
+ *
+ * 为什么换：FontAwesome 的 fa-sun 在 20px 下 8 条光线与核心粘连，
+ * 看起来像齿轮；fa-moon 是实心块，与线性风格也不搭。
+ * 现统一采用 VitePress 默认主题的图标（源自 Lucide，ISC 许可）：
+ *   太阳 = 空心圆 r=4 + 8 条短线（stroke-width 2，圆头端点）
+ *   月亮 = 单笔月牙描边
+ * 两个都是纯 stroke、无 fill，切换时风格一致，不会忽粗忽细。
+ *
+ * 结构：header.ejs 里 <i class="sun|moon"><svg …></svg></i>
+ *   <i> 保留原类名，显隐仍由 .sun / .moon 的 display 规则控制；
+ *   font-size 由 .top-nav-button i / .nav-button i 给到 20px。
+ *
+ * 尺寸取 1.1em：Lucide 图形内容只占 viewBox 的 20/24，直接用 1em
+ * 会显得比旁边的放大镜小一圈，放大 10% 后视觉大小与 20px 字体图标一致。
+ * ============================================================ */
+.dark-mode-button .sun svg,
+.dark-mode-button .moon svg {
+    display: block;
+    width: 1.1em;
+    height: 1.1em;
+    margin: 0 auto;
+    fill: none;
+    stroke: currentColor;
+}
+/* ===== 独立页关闭态（vignette.enable / equipment.enable 等为 false 时） =====
+   原先只有 fcircle 有这套样式，且写在 fcircle-page.css 里（只在朋友圈页加载），
+   其它页面关闭时没有可用的提示块。抽成通用 .page-off，全站可用。 */
+.page-off {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 64px 20px;
+    border: 1px dashed var(--vt-border-color);
+    border-radius: var(--vt-border-radius);
+    background: var(--vt-bg-color-card);
+    color: var(--vt-text-color-grey);
+    font-size: 14px;
+    text-align: center;
+}
+
+.page-off i {
+    font-size: 16px;
+}
+
+.page-off code {
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--vt-bg-color-grey);
+    color: var(--vt-text-color);
+    font-size: 13px;
+}

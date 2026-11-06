@@ -441,10 +441,10 @@ var miles = (Array.isArray(ten.milestones) ? ten.milestones : []).map(function (
 
     </div><!-- .main-widget -->
 
-    <% /* 右侧栏：站长名片 + 与首页/归档页同一套小工具（主题 _config.yml 的 sidebar.default-sidebar）
-          名片与文章页共用 _partial/widgets/user-widget，内容/开关全在 _config.yml 的 user_card 段 */ %>
+    <% /* 右侧栏：与首页/归档页同一套小工具（主题 _config.yml 的 sidebar.default-sidebar）
+          default-sidebar 首位已包含 user-widget（站长名片），此处不要再单独 partial 一次，
+          否则关于页会输出两张一模一样的名片。名片内容/开关见 _config.yml 的 user_card 段 */ %>
     <div class="sider">
-        <%- partial('_partial/widgets/user-widget') %>
         <%- partial('_partial/sidebar', {name: 'default-sidebar'}) %>
     </div>
 </div>

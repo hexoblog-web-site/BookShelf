@@ -14,7 +14,8 @@
 
 var vt_config = vt_get_config();
 
-var full_width = 0;
+/* 归档是日期列表页，没有 term_meta；沿用全局 full_width（与 latest 模块同一开关） */
+var full_width = vt_bool('full_width', false);
 var paged = page.current || 1;
 
 // 获取第一篇文章的缩略图或者图片（与 category.php 同逻辑）
@@ -47,7 +48,7 @@ if (!arch_title) {
 </div>
 
 
-<div class="main-container">
+<div class="main-container<%= full_width ? ' full-width' : '' %>">
     <div class="main-widget">
         <div class="media-list">
             <% if (page.posts && page.posts.length) { %>

@@ -53,13 +53,8 @@ var full_width_attribute = full_width ? 'full-width' : '';
                         <div class="link-items">
                             <% cat_links.forEach(function(link){ %>
                             <div class="link-item">
-                                <%
-                                var link_target_attr = '';
-                                if (link.target) {
-                                    link_target_attr = 'target="' + esc_attr(link.target) + '"';
-                                }
-                                %>
-                                <a href="<%- esc_url(link.url) %>" <%= link_target_attr %> rel="nofollow">
+                                <a href="<%- esc_url(link.url) %>"
+                                   <% if (link.target) { %>target="<%= link.target %>" rel="nofollow noopener"<% } else { %>rel="nofollow"<% } %>>
                                 </a>
                                 <% if (link.image) { %>
                                     <img src="<%- esc_url(url_for(link.image)) %>" alt="<%= esc_attr(link.name) %>">
@@ -83,13 +78,8 @@ var full_width_attribute = full_width ? 'full-width' : '';
                     <% if (all_links.length) { %>
                         <% all_links.forEach(function(link){ %>
                         <div class="link-item">
-                            <%
-                            var link_target_attr = '';
-                            if (link.target) {
-                                link_target_attr = 'target="' + esc_attr(link.target) + '"';
-                            }
-                            %>
-                            <a href="<%- esc_url(link.url) %>" <%= link_target_attr %> rel="nofollow">
+                            <a href="<%- esc_url(link.url) %>"
+                               <% if (link.target) { %>target="<%= link.target %>" rel="nofollow noopener"<% } else { %>rel="nofollow"<% } %>>
                             </a>
                             <% if (link.image) { %>
                                 <img src="<%- esc_url(url_for(link.image)) %>" alt="<%= esc_attr(link.name) %>">

@@ -1,18 +1,33 @@
 <%
 /**
  * slider.ejs ← templates/home/slider.php（1:1 转写）
+ *
+ * 两个数据源：
+ *   slider_items  左侧幻灯片，写几条显示几条
+ *   top_items     右侧两个推荐位，只取前两条
+ * 两者都为空时整块不输出 —— 否则会留下一个 300px 高的空白条。
+ *
+ * data-autoplay 直接输出配置原值，由 /js/index.js 的 parseAutoplay 解析：
+ *   true / 1  → 5000ms；数字 → 当毫秒；false / 0 / 空 → 不自动播放
  */
 var slider_height = vt_get_config('slider_height', 300);
 var slider_autoplay = vt_get_config('slider_autoplay', 5000);
-var slider_items = vt_get_config('slider_items', []);
+var slider_items = vt_get_config('slider_items', []) || [];
 var slider_effect = vt_get_config('slider_effect', 'slide');
 
-var top_items = vt_get_config('top_items', []);
+var top_items = vt_get_config('top_items', []) || [];
+
+if (!Array.isArray(slider_items)) slider_items = [];
+if (!Array.isArray(top_items)) top_items = [];
+top_items = top_items.slice(0, 2);
+
+var slider_on = slider_items.length > 0 || top_items.length > 0;
 %>
 
+<% if (slider_on) { %>
 <style>
 @media screen and (min-width:900px) {
-    .swiper.swiper-container { height: <%= parseInt(slider_height, 10) %>px; }
+    .swiper.swiper-container { height: <%= parseInt(slider_height, 10) || 300 %>px; }
 }
 
 
@@ -21,43 +36,47 @@ var top_items = vt_get_config('top_items', []);
 <div class="main-container top">
     <div class="main-widget">
 
+        <% if (slider_items.length) { %>
         <div class="swiper swiper-container"
             data-autoplay="<%= esc_attr(slider_autoplay) %>"
             data-effect="<%= esc_attr(slider_effect) %>" >
             <div class="swiper-wrapper">
-                <% if (slider_items) { %>
-                    <% slider_items.forEach(function(v){ %>
-                        <%
-                        var target = (typeof v['target'] !== 'undefined' && v['target']) ? 'target="_blank"' : '';
-                        %>
-                        <a class="swiper-slide" href="<%- esc_url(v['link'] || '') %>" <%= target %> >
-                            <img src="<%- url_for(v['image'] || '') %>" alt="">
-                            <% if (v['title']) { %>
-                                <div class="slider-title"><%= v['title'] %></div>
-                            <% } %>
-                        </a>
-                    <% }) %>
-                <% } %>
+                <% slider_items.forEach(function(v){ %>
+                    <%
+                    var target = (typeof v['target'] !== 'undefined' && v['target']) ? 'target="_blank"' : '';
+                    %>
+                    <a class="swiper-slide" href="<%- esc_url(v['link'] || '') %>" <%= target %> >
+                        <% if (v['image']) { %>
+                            <img src="<%- url_for(v['image']) %>" alt="">
+                        <% } %>
+                        <% if (v['title']) { %>
+                            <div class="slider-title"><%= v['title'] %></div>
+                        <% } %>
+                    </a>
+                <% }) %>
             </div>
             <div class="swiper-button-next"></div>
             <div class="swiper-button-prev"></div>
             <div class="swiper-pagination"></div>
         </div>
+        <% } %>
 
+        <% if (top_items.length) { %>
         <div class="hot-img-widget">
-            <% if (top_items) { %>
-                <% top_items.forEach(function(v, k){ %>
-                    <% if(k>1) return; %>
-                    <%
-                    var target = (typeof v['target'] !== 'undefined' && v['target']) ? 'target="_blank"' : '';
-                    %>
-                    <a class="item" href="<%- esc_url(v['link'] || '') %>" <%= target %> >
-                        <img src="<%- url_for(v['image'] || '') %>" alt="">
-                        <div class="title"><%= v['title'] %></div>
-                    </a>
-                <% }) %>
-            <% } %>
+            <% top_items.forEach(function(v){ %>
+                <%
+                var target = (typeof v['target'] !== 'undefined' && v['target']) ? 'target="_blank"' : '';
+                %>
+                <a class="item" href="<%- esc_url(v['link'] || '') %>" <%= target %> >
+                    <% if (v['image']) { %>
+                        <img src="<%- url_for(v['image']) %>" alt="">
+                    <% } %>
+                    <div class="title"><%= v['title'] %></div>
+                </a>
+            <% }) %>
         </div>
+        <% } %>
 
     </div>
 </div>
+<% } %>

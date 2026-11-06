@@ -29,8 +29,7 @@ if (!category) {
 var term_meta_map = vt_get_config('term_meta', {}) || {};
 var term_meta = term_meta_map[category] || {};
 
-var full_width = term_meta['vt_full_width'];
-var full_width_class = full_width==1 ? 'full-width' : '';
+var full_width = term_meta['vt_full_width'] === true || String(term_meta['vt_full_width']) === '1';
 
 var vt_list_type = term_meta['vt_list_type'];
 var vt_list_type_class = '';
@@ -65,7 +64,7 @@ if(term_meta_thumbnail){
 </div>
 
 
-<div class="main-container" class="<%= esc_attr(full_width_class) %>">
+<div class="main-container<%= full_width ? ' full-width' : '' %>">
     <div class="main-widget">
         <%
         /* WP: WP_Query(cat, posts_per_page, ignore_sticky_posts, orderby date,

@@ -23,17 +23,25 @@ var theme_url = url_for('/');
 var has_thumbnail = !!(item.cover || item.banner);
 var thumbnail_url = item.cover || item.banner || '';
 var placeholder_url = url_for('/images/placeholder.svg');
+/* 懒加载关闭时直接输出真实 src，避免图片要等脚本才出现 */
+var lazy_on = vt_bool('lazy_load_enabled', true);
+var default_image = vt_get_config('default_image', '/images/default.jpg');
 %>
 <div class="vt-card-item">
     <div class="vt-card-thumbnail">
         <a href="<%- url_for(item.path) %>" <%= target %> >
             <% if (has_thumbnail) { %>
-                <img class="lazyload-img"
-                     data-src="<%- url_for(thumbnail_url) %>"
-                     src="<%- url_for(placeholder_url) %>"
-                     alt="<%= item.title || '' %>" />
+                <% if (lazy_on) { %>
+                    <img class="lazyload-img"
+                         data-src="<%- url_for(thumbnail_url) %>"
+                         src="<%- url_for(placeholder_url) %>"
+                         alt="<%= item.title || '' %>" />
+                <% } else { %>
+                    <img src="<%- url_for(thumbnail_url) %>"
+                         alt="<%= item.title || '' %>" />
+                <% } %>
             <% } else { %>
-                <img src="<%- url_for('/images/default.jpg') %>" alt="<%= item.title || '' %>" />
+                <img src="<%- url_for(default_image) %>" alt="<%= item.title || '' %>" />
             <% } %>
             <div class="vt-card-badget-widget">
                 <% if(item.sticky){ %>

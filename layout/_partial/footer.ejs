@@ -14,8 +14,8 @@ var footer_copyright = vt_get_config('footer_copyright', '');
 var page_data_type = vt_get_config('page_data_type', 0);
 var footer_js = vt_get_config('footer_js', '');
 
-/* WP: $current_theme->get('Version') —— 主题版本 */
-var version = '3.12.0';
+/* 主题版本（与 package.json 的 version 保持一致，改版本时两处同步） */
+var version = '1.8.1';
 %>
 
 
@@ -51,7 +51,7 @@ var version = '3.12.0';
     <div class="footer-container">
         <%- footer_copyright %>
         <span>
-            基于 <a href="https://www.liublog.cn" copyright target="_blank" rel="noopener">BookShelf</a> 主题（源自 Mirage / vtheme）
+            基于 <a href="https://www.liublog.cn" copyright target="_blank" rel="noopener">BookShelf</a> 主题 <span class="theme-version">v<%= version %></span>（源自 Mirage / vtheme）
         </span>
         <% /* WP get_num_queries()/timer_stop() 为数据库查询统计，静态生成器无查询，恒为 0 */ %>
         <% if(page_data_type == 1){ %>
@@ -118,12 +118,13 @@ var i18n = <%- JSON.stringify({
 }) %>;
 </script>
 
-<script type="text/javascript" src="<%- url_for('/js/index.js') %>?v=<%= config.asset_version || '1' %>"></script>
-
 <% /* functions.php vt_print_ajax_var()（wp_footer 钩子）：
-   仅文章/页面详情页输出完整对象，首页列表输出空对象 */ %>
+   仅文章/页面详情页输出完整对象，首页列表输出空对象。
+   ★ 必须放在 /js/index.js 之前：评论、登录、点赞等模块在初始化时就会读
+   ajax_object，原先放在 index.js 后面，文章页第一屏必然报
+   "ajax_object is not defined"（后面的脚本直接不执行）。 */ %>
 <% if (is_post() || is_page()) { %>
-<script type="text/javascript">var ajax_object = <%= JSON.stringify({
+<script type="text/javascript">var ajax_object = <%- JSON.stringify({
   ajax_url: '',
   nonce: '',
   submit_nonce: '',
@@ -133,6 +134,10 @@ var i18n = <%- JSON.stringify({
 <% } else { %>
 <script type="text/javascript">var ajax_object = {};</script>
 <% } %>
+
+<% /* 前端开关：同样要在 index.js 之前声明，模块初始化时读取 */ %>
+<script type="text/javascript">window.vtLazyLoad = <%- vt_flag_str('lazy_load_enabled', true) %>;</script>
+<script type="text/javascript" src="<%- url_for('/js/index.js') %>?v=<%= config.asset_version || '1' %>"></script>
 
 <% /* footer_js 允许JS，仅配置可控；若想严格限制改为注释下面一行，不输出 */ %>
 <%- footer_js %>

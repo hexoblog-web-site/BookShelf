@@ -14,8 +14,10 @@
  */
 var vt_config = vt_get_config();
 
-var full_width = vt_config['full_width'];
-var full_width_class = full_width==1 || full_width===true ? 'full-width' : '';
+/* 全宽：vt_bool 会把 yml 里的 "true" / 1 / "1" 都解析成布尔，
+   避免 full_width: "0" 被当成真值（字符串 "0" 在 JS 里是真） */
+var full_width = vt_bool('full_width', false);
+var full_width_class = full_width ? 'full-width' : '';
 
 var vt_list_type = vt_config['list_type'];
 var vt_list_type_class = '';
@@ -34,7 +36,13 @@ function inNames(cats, names) {
   return cats.some(function (c) { return names.indexOf(c.name) !== -1; });
 }
 
-var list_posts = (page.posts && page.posts.toArray) ? page.posts.toArray() : [];
+/* page.posts 通常是 Hexo 的 Query（有 toArray），但首页若由自定义生成器
+   （scripts/home-gen.js 做分类过滤）返回，就是普通数组 —— 两种都要能吃 */
+var list_posts = page.posts
+    ? (typeof page.posts.toArray === 'function'
+        ? page.posts.toArray()
+        : Array.prototype.slice.call(page.posts))
+    : [];
 list_posts = list_posts.filter(function (p) {
     var cats = p.categories ? p.categories.toArray() : [];
     if (posts_ids.length && !inNames(cats, posts_ids)) return false;
@@ -48,9 +56,19 @@ var max_num_pages = page.total || 1;
 function linkFor(n) {
     return n === 1 ? url_for(page.base || '/') : url_for((page.base || '/') + 'page/' + n + '/');
 }
+
+/* 自动加载（滚动到底自动追加下一页）
+   posts_auto_load: 1 开 / 0 关；posts_auto_load_limit: 自动加载几次，0 = 一直加载到最后一页。
+   属性挂在 .media-list 上，脚本见 source/js/auto-load.js。 */
+var posts_auto_load = vt_bool('posts_auto_load', false);
+var auto_load_limit = parseInt(vt_get_config('posts_auto_load_limit', 1), 10);
+if (isNaN(auto_load_limit) || auto_load_limit < 0) auto_load_limit = 1;
+var auto_next_page = paged + 1;
+var auto_has_next = auto_next_page <= max_num_pages;
+var auto_load_on = posts_auto_load && auto_has_next;
 %>
 
-<div class="main-container" class="<%= esc_attr(full_width_class) %>">
+<div class="main-container<%= full_width ? ' full-width' : '' %>">
     <div class="main-widget">
         <%- vt_theme_ad('ad_header') %>
 
@@ -60,7 +78,8 @@ function linkFor(n) {
 
 
         <div class="main-widget">
-            <div class="media-list <%= esc_attr(vt_list_type_class) %>">
+            <div class="media-list <%= esc_attr(vt_list_type_class) %>"
+                <% if (auto_load_on) { %>data-auto-load="1" data-auto-next="<%= linkFor(auto_next_page) %>" data-auto-limit="<%= auto_load_limit %>"<% } %>>
                 <% if ( list_posts.length ) { %>
                     <%
                     list_posts.forEach(function(p) {
@@ -93,7 +112,7 @@ function linkFor(n) {
         <%- vt_theme_ad('ad_footer') %>
     </div>
 
-    <% if(!full_width || full_width===false){ %>
+    <% if (!full_width) { %>
         <div class="sider">
             <%- partial('_partial/sidebar', {name: 'default-sidebar'}) %>
 
@@ -102,3 +121,7 @@ function linkFor(n) {
     <% } %>
 
 </div>
+
+<% if (auto_load_on) { %>
+<script type="text/javascript" src="<%- url_for('/js/auto-load.js') %>?v=<%= config.asset_version || '1' %>"></script>
+<% } %>

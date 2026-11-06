@@ -2,11 +2,12 @@
 /**
  * notices.ejs ← templates/home/notices.php（1:1 转写）
  */
-var notice_items = vt_get_config('notice_items', []);
+var notice_items = vt_get_config('notice_items', []) || [];
 var notice_target = vt_get_config('notice_target') ? 'target="_blank"' : '';
+if (!Array.isArray(notice_items) || !notice_items.length) notice_items = [];
 %>
 
-
+<% if (notice_items.length) { %>
 <div class="notice">
 	<div class="notice-container">
 		<i class="fa-solid fa-bell"></i>
@@ -27,15 +28,33 @@ var notice_target = vt_get_config('notice_target') ? 'target="_blank"' : '';
 
 
 <script type="text/javascript">
+(function () {
 var scrollContainer = document.querySelector('.scroll-container');
 var noticeWidget = document.querySelector('.notice-widget');
-var arrowIcon = document.querySelector('.fa-arrow-right');
+var arrowIcon = document.querySelector('.notice-container .fa-arrow-right');
+if (!scrollContainer || !noticeWidget) return;
+
+/* 只有一条公告时不需要滚动，也不做 % 取模 —— 空列表时 childElementCount 为 0，
+   `% 0` 会算出 NaN，translateY(NaNpx) 直接把整条公告挪没。 */
+var total = noticeWidget.childElementCount;
+if (total < 2) {
+    if (arrowIcon && total === 1) {
+        arrowIcon.addEventListener('click', function () {
+            var a = noticeWidget.querySelector('a');
+            if (!a) return;
+            if (a.target === '_blank') { window.open(a.href, '_blank'); }
+            else { window.location.href = a.href; }
+        });
+    }
+    return;
+}
+
 var currentLine = 0;
 var scrollInterval;
 
 function scrollNextLine() {
-    var lineHeight = noticeWidget.scrollHeight / noticeWidget.childElementCount;
-    currentLine = (currentLine + 1) % noticeWidget.childElementCount;
+    var lineHeight = noticeWidget.scrollHeight / total;
+    currentLine = (currentLine + 1) % total;
     noticeWidget.style.transform = "translateY(-" + (currentLine * lineHeight) + "px)";
 }
 
@@ -53,19 +72,19 @@ function stopScroll() {
 }
 
 // 箭头图标点击跳转
-arrowIcon.addEventListener('click', function() {
-    var currentNotice = noticeWidget.children[currentLine];
-    if (currentNotice) {
-        var link = currentNotice.querySelector('a').href;
-        var target = currentNotice.querySelector('a').target;
-
-        if (target === '_blank') {
-            window.open(link, '_blank');
+if (arrowIcon) {
+    arrowIcon.addEventListener('click', function () {
+        var currentNotice = noticeWidget.children[currentLine];
+        if (!currentNotice) return;
+        var a = currentNotice.querySelector('a');
+        if (!a) return;
+        if (a.target === '_blank') {
+            window.open(a.href, '_blank');
         } else {
-            window.location.href = link;
+            window.location.href = a.href;
         }
-    }
-});
+    });
+}
 
 // 鼠标移入时停止滚动
 scrollContainer.addEventListener('mouseenter', stopScroll);
@@ -75,7 +94,9 @@ scrollContainer.addEventListener('mouseleave', startScroll);
 
 // 启动滚动
 startScroll();
+})();
 </script>
+<% } /* notice_items.length */ %>
 
 
 <% /* 不要移除这段注释

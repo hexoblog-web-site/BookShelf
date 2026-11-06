@@ -5143,9 +5143,14 @@ body.dark-mode .user-card {
  * 宽屏样式覆盖
  */
 @media only screen and (min-width: 768px) {
+  /* 两种写法都支持：
+     <div class="main-container full-width">（类名，模板主用）
+     <div class="main-container" full-width>（WP 属性写法，老页面仍在用） */
+  .main-container.full-width .main-widget,
   .main-container[full-width] .main-widget {
     width: 100%;
   }
+  .main-container.full-width .sider,
   .main-container[full-width] .sider {
     display: none;
   }

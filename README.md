@@ -2,6 +2,8 @@
 
 **一款优雅的 Hexo 文学阅读博客主题。**
 
+当前版本 **v1.8.1**（版本号与 `package.json` 的 `version` 同步，页脚亦会显示）。
+
 版式克制、留白充足，把注意力留给文字本身；列表给摘要、正文给节奏，适合长篇随笔、书摘笔记、民俗掌故这类要"读进去"的内容。
 
 > **第一次用？** 先看 [使用说明](docs/guide.md)——安装、最少配置、接点赞与评论、常见问题都在那一篇里。
@@ -85,14 +87,14 @@ hexo clean && hexo generate && hexo server
 
 字段 ID 与 WP 后台完全一致，按原 CSF 分节注释：
 
-- **常规设置**：`basic_style` / `dark_mode_type` / `default_image` / `background_image` / `lazy_load_enabled`（`update_is_on`、`page_data_type`、`editor_type` 为 WP 后台功能，字段保留）
+- **常规设置**：`basic_style` / `page_data_type` / `dark_mode_type` / `default_image` / `share_image` / `background_image` / `lazy_load_enabled`（`lazy_load_enabled: false` 时卡片图直接输出真实 src，不等脚本）
 - **SEO 设置**：`keywords` / `description`
-- **首页设置**：`home_layout.enabled`（数组顺序 = 显示顺序，白名单同 index.php）、`slider_height` / `slider_autoplay` / `slider_effect` / `slider_items` / `top_items`、`notice_target` / `notice_items`、`hot_title` / `hot_cat_id` / `hot_post_ids`、`posts_ids` / `posts_not_in_ids` / `posts_auto_load` / `posts_auto_load_limit` / `full_width` / `list_type` / `vt_columns`、`links_switcher` / `links_title`
-- **顶部设置**：`site_logo` / `site_logo_darkness` / `sticky_header`（`show_admin_bar` 保留字段）
+- **首页设置**：`home_layout.enabled`（数组顺序 = 显示顺序；未列出的板块按 `sections` 顺序排在后面，开关统一看 `sections.<板块>.show`）、`slider_height` / `slider_autoplay`（true=5s / false=不播 / 数字=毫秒）/ `slider_effect` / `slider_items` / `top_items`、`notice_target` / `notice_items`、`hot_title` / `hot_cat_id` / `hot_post_ids`、`posts_ids` / `posts_not_in_ids`（**分页前**过滤，页码与篇数不会错位）/ `posts_auto_load` / `posts_auto_load_limit`（真实滚动加载，页面脚本 `source/js/auto-load.js`）/ `full_width` / `list_type` / `vt_columns`、`links_switcher`（与 `sections.links.show` 并联）/ `links_title`
+- **顶部设置**：`site_logo` / `site_logo_darkness` / `sticky_header`
 - **底部设置**：`footer_bg_type` / `footer_copyright` / `footer_js` / `sns_items` / `footer_links`
 - **文章设置**：`show_copyright` / `show_copyright_text` / `highlight_is_on` / `breadcrumbs_enabled` / `qrcode_items`
 - **广告设置**：`ad_header_*` / `ad_footer_*` / `ad_sidebar_*` / `ad_single_top_*` / `ad_single_bottom_*`（enable/code/code_pc，与 `vt_theme_ad()` 读取方式一致）
-- **会员设置**：`privacy_policy` / `terms_of_service` / `vip_avatar_upload` 等（字段保留）
+- **会员设置**：`login.enable` / `privacy_policy` / `terms_of_service` / `users_can_register`（登录注册为 WP 后端功能，静态站只有前端结构）
 - **WP 系统项转写**：`menu`（导航菜单，最多 4 级）、`side_menu`（侧栏分类菜单）、`sidebar.default-sidebar / posts-sidebar`（小工具列表）、`users_can_register`、`thread_comments_depth`、`term_meta`（分类/标签自定义字段 vt_full_width / vt_list_type / vt-thumbnail）、`links_data` / `links_groups`（WP 链接管理器）
 
 ## 四、文章 front-matter 扩展

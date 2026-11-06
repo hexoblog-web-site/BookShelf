@@ -315,7 +315,7 @@ var read_minutes = Math.max(1, Math.round(word_count / 400));
     <% } %>
 </div>
 
-<div class="vt-dialog" id="share-dialog" class="normal-dialog">
+<div class="vt-dialog normal-dialog" id="share-dialog">
     <div class="share-dialog-widget dialog-widget">
         <a href="javascript:;" class="close-button close"><i class="fa-solid fa-xmark"></i></a>
         <div class="share-card">
@@ -335,11 +335,13 @@ var read_minutes = Math.max(1, Math.round(word_count / 400));
             </div>
         </div>
         <div class="top-layer"><%= esc_html(__('Generating...')) %></div>
-        <img src="" id='poster' class="hide" alt="" />
+        <% /* 生成分享海报时由脚本写入 src；不写 src="" 是为了避免浏览器
+                把空地址当成当前页地址再请求一次（每篇文章白跑一次 HTML 请求） */ %>
+        <img id='poster' class="hide" alt="" />
     </div>
 </div>
 
-<div class="vt-dialog" id="coin-dialog" class="normal-dialog">
+<div class="vt-dialog normal-dialog" id="coin-dialog">
     <div class="coin-dialog-widget dialog-widget">
         <a href="javascript:;" class="close-button close">
             <i class="fa-solid fa-xmark"></i>
@@ -367,7 +369,8 @@ var post_object = {
 };
 </script>
 
-<% if(vt_config['highlight_is_on']){ %>
+<% /* vt_bool：yml 里写 "0" / false 都能真正关掉（字符串 "0" 在 JS 里是真值） */ %>
+<% if (vt_bool('highlight_is_on', true)) { %>
     <link rel="stylesheet" type="text/css" href="<%- url_for('/lib/prism/prism.css') %>">
     <script type="text/javascript" src="<%- url_for('/lib/prism/prism.js') %>"></script>
 <% } %>

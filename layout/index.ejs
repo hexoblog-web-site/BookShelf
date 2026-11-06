@@ -37,38 +37,47 @@ if (!vt_sections || typeof vt_sections !== 'object' || Array.isArray(vt_sections
 }
 var vt_has_sections = Object.keys(vt_sections).length > 0;
 
-/* 显示顺序：sections 的书写顺序（只保留首页板块，侧栏小工具自动忽略） */
+/* ---- 顺序 ----
+   两处配置都可能给顺序，规则：
+     home_layout.enabled 有值 → 它排前面（白名单 + 顺序）
+     其余板块按 sections 的书写顺序跟在后面
+   这样调整 home_layout.enabled 立刻反映到页面，也不会因为漏写一个新板块
+   就让它整块消失（开关统一用 sections.<板块>.show）。 */
+var home_config = vt_get_config('home_layout', {}) || {};
+var legacy_enabled = Array.isArray(home_config.enabled) ? home_config.enabled : [];
+var legacy_exclude = vt_get_config('home_paged_exclude', []) || [];
+if (!Array.isArray(legacy_exclude)) legacy_exclude = [];
+
 var vt_order = [];
+legacy_enabled.forEach(function (k) {
+    k = String(k).trim();
+    if (template_whitelist.indexOf(k) !== -1 && vt_order.indexOf(k) === -1) vt_order.push(k);
+});
 if (vt_has_sections) {
     Object.keys(vt_sections).forEach(function (k) {
-        if (template_whitelist.indexOf(k) !== -1) vt_order.push(k);
+        if (template_whitelist.indexOf(k) !== -1 && vt_order.indexOf(k) === -1) vt_order.push(k);
     });
 }
-if (!vt_order.length) {
-    // 兼容：无 sections 时用 WP 原生 home_layout.enabled
-    var home_config = vt_get_config('home_layout', {enabled: []}) || {};
-    var enabled = home_config.enabled || [];
-    enabled.forEach(function (k) {
-        k = String(k).trim();
-        if (template_whitelist.indexOf(k) !== -1) vt_order.push(k);
-    });
-    // 兼容旧字段 home_paged_exclude（数组形式 = 翻页隐藏）
-    var legacy_exclude = vt_get_config('home_paged_exclude', []) || [];
-    if (!Array.isArray(legacy_exclude)) legacy_exclude = [];
-    vt_order = vt_order.filter(function (k) {
-        return !(is_paged && legacy_exclude.indexOf(k) !== -1);
-    });
-} else {
-    /* sections 模式：按 show / paged_hide 判断是否输出 */
-    vt_order = vt_order.filter(function (k) {
-        var cfg = vt_sections[k];
-        if (cfg && typeof cfg === 'object') {
-            if (!vt_flag(cfg.show, true)) return false;                   // 总开关关闭
-            if (is_paged && vt_flag(cfg.paged_hide, false)) return false; // 翻页后隐藏
-        }
-        return true;
-    });
-}
+
+/* ---- 开关 ----
+   sections.<板块>.show        总开关（不写 = 显示）
+   sections.<板块>.paged_hide  翻页后是否隐藏
+   home_paged_exclude          旧字段，等价于给这些板块写 paged_hide: true
+*/
+vt_order = vt_order.filter(function (k) {
+    var cfg = vt_sections[k];
+    if (cfg && typeof cfg === 'object') {
+        if (!vt_flag(cfg.show, true)) return false;                  // 总开关关闭
+        if (is_paged && vt_flag(cfg.paged_hide, false)) return false; // 翻页后隐藏
+    }
+    if (is_paged && legacy_exclude.indexOf(k) !== -1) return false;
+
+    /* links_switcher 是 WP 时代的「友情链接开关」，与 sections.links.show 管同一块。
+       两个都保留：任一写 false 就隐藏，避免老配置改不动。 */
+    if (k === 'links' && !vt_bool('links_switcher', true)) return false;
+
+    return true;
+});
 
 /* 首页此前一个 h1 都没有：幻灯片是配图、板块标题是 div，
  * 搜索引擎只能从 <title> 猜这页讲什么，拿不到「站点叫什么」的正文信号。

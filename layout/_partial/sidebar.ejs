@@ -8,11 +8,35 @@
  *   posts-sidebar:   [user-widget, image-article-list, tags-widget]
  * 小工具 DOM 与 inc/widget.php 中各 Widget 类的 widget() 输出 1:1 一致。
  * before_widget='' / before_title='<h4>' —— 各 widget 内部已含对应结构。
+ *
+ * 两级开关：
+ *   1) sidebar 数组决定「有哪几个」（增删条目）
+ *   2) sections.<板块>.show 决定「当前是否显示」（写 false 即临时隐藏，不用改数组）
  */
 var sidebars = vt_get_config('sidebar', {});
 var widgets = sidebars[name] || [];
+
+var vt_sections = vt_get_config('sections', {}) || {};
+
+/* 小工具 → sections 板块名：热门 / 最新 / 标签 / 分类各受自己的 show 控制，
+   站长名片与评论列表没有对应板块，始终跟随数组 */
+var WIDGET_SECTION = {
+    'hot-list': 'popular',
+    'image-article-list': 'recent',
+    'tags-widget': 'tags',
+    'category-list': 'category'
+};
+
+function widgetEnabled(widgetId) {
+    var secKey = WIDGET_SECTION[widgetId];
+    if (!secKey) return true;
+    var sec = vt_sections[secKey];
+    if (!sec || typeof sec !== 'object') return true;   // 没写这个板块 = 不限制
+    return vt_bool('sections.' + secKey + '.show', true);
+}
 %>
 <% widgets.forEach(function(widgetId){ %>
+    <% if (!widgetEnabled(widgetId)) { return; } %>
     <% if (widgetId === 'hot-list') { %>
         <%- partial('_partial/widgets/hot-list') %>
     <% } else if (widgetId === 'image-article-list') { %>

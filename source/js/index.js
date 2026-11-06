@@ -564,21 +564,37 @@
   /**
    * 幻灯片
    */
+
+  /**
+   * 解析 data-autoplay：兼容 WP 的 1/0 写法，也接受毫秒数
+   *   true / 1 / yes        → 默认 5000ms
+   *   8000（或 "8000"）      → 8000ms
+   *   false / 0 / 空 / 其他   → 不自动播放
+   */
+  function parseAutoplay(raw) {
+    if (raw === undefined || raw === null) return false;
+    const v = String(raw).trim().toLowerCase();
+    if (!v || v === '0' || v === 'false' || v === 'no' || v === 'off') return false;
+    if (v === '1' || v === 'true' || v === 'yes' || v === 'on') return 5000;
+    const n = parseInt(v, 10);
+    return n > 0 ? n : false;
+  }
+
   function swiper () {
     const swiperContainer = document.querySelector('.swiper-container');
     if (!swiperContainer) return;
 
     // 根据 data-autoplay 属性决定是否自动播放
-    const autoplay = swiperContainer.dataset.autoplay == '1';
+    const delay = parseAutoplay(swiperContainer.dataset.autoplay);
     const effect = swiperContainer.dataset.effect;
 
     new Swiper('.swiper-container', {
       pagination: {
         el: '.swiper-pagination',
       },
-      // 根据 autoplay 变量决定是否启用自动播放
-      autoplay: autoplay ? {
-        delay: 5000,
+      // 根据 delay 决定是否启用自动播放
+      autoplay: delay ? {
+        delay: delay,
         disableOnInteraction: false,
       } : false,
       loop: true,
@@ -639,7 +655,11 @@
    */
 
   // 配置参数
+  // enabled 由 _config.yml 的 lazy_load_enabled 决定（footer.ejs 注入 window.vtLazyLoad）
   const LAZY_LOAD_CONFIG = {
+      enabled: (typeof window !== 'undefined' && typeof window.vtLazyLoad === 'boolean')
+          ? window.vtLazyLoad
+          : true,
       offset: 100,   // 预加载偏移量(px)
       rootMargin: '100px 0px 100px 0px' // 视口边距
   };
@@ -672,7 +692,9 @@
           rootMargin: LAZY_LOAD_CONFIG.rootMargin
       });
 
-      images.forEach(img => imageObserver.observe(img));
+      images.forEach(img => {
+          if (!img.classList.contains('loaded')) imageObserver.observe(img);
+      });
   }
 
   /**
@@ -753,6 +775,12 @@
    * 初始化懒加载功能
    */
   function lazyLoad() {
+      if (!LAZY_LOAD_CONFIG.enabled) {
+          document.querySelectorAll('img[data-src]').forEach(function (img) {
+              img.src = img.dataset.src;
+          });
+          return;
+      }
 
       // 等待DOM加载完成
       if (document.readyState === 'loading') {
@@ -766,12 +794,16 @@
    * 初始化懒加载
    */
   function initLazyLoad() {
+      if (!LAZY_LOAD_CONFIG.enabled) return;
       if (isIntersectionObserverSupported()) {
           modernLazyLoad();
       } else {
           legacyLazyLoad();
       }
   }
+
+  // 自动加载（无限滚动）追加新卡片后要重新接管，暴露到全局
+  window.vtReinitLazyLoad = initLazyLoad;
 
   /**
    * 公共函数
@@ -2563,14 +2595,8 @@
   comments();
   widget.sideMenuInit();
 
-  function vt_footer_check() {
-    window.addEventListener('load', function(e){
-      let themeName = document.querySelector('a[copyright]');
-      if(!themeName || themeName.innerText !== "BookShelf"){
-        document.body.innerHTML = 'keep_theme_footer';
-      }
-    });
-  }
-  vt_footer_check(); // 主题底部署名检查
+  /* 原版 vt_footer_check()（找不到 a[copyright] 就把整页替换成一行提示文字的
+     防拆逻辑）已移除：空间/CDN 压缩 HTML 时可能剥掉非标准布尔属性 copyright，
+     导致线上白屏。页脚署名仍由 layout/_partial/footer.ejs 静态输出。 */
 
 })();
