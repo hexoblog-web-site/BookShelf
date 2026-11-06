@@ -1,0 +1,231 @@
+<%
+/**
+ * vignette.ejs —— 即刻短文 / 说说页（/vignette/）
+ *
+ * 数据来源：source/_data/vignette.yml（顶层列表）
+ *   每条：title / date / author{name,avatar,link} / content / images[]
+ *   images 可以是 0、1、2、4 张；一屏显示 2 张，多出来的用左右按钮翻。
+ *
+ * 三件套：
+ *   模板  layout/vignette.ejs        （本文件）
+ *   样式  source/style/vignette-page.css   （仅在 /vignette/ 加载，见 header.ejs）
+ *   脚本  source/js/vignette-page.js       （相对时间 / 加载更多 / 图集翻页 / 灯箱）
+ *
+ * 文案、每屏条数、默认头像在主题 _config.yml 的 vignette 段。
+ * 点赞复用 zan（Sugar-Box）：每条说说用 /vignette/<日期-标题> 作为独立 key，
+ * 容器带 data-zan-scope="content"，服务端才允许非文章页写库。
+ * 没开 zan 时心形只显示 0，不产生任何请求。
+ */
+var cfg      = vt_get_config('vignette', {}) || {};
+var list     = (site.data && site.data.vignette) || [];
+var vgOn     = cfg.enable !== false;      // 页面总开关，false 时不渲染正文、不加载脚本
+
+var vgTitle  = cfg.title || '即刻短文';
+var vgTips   = cfg.tips || '随时随地，分享生活';
+var vgAvatar = cfg.avatar || '/images/avatar.jpg';
+var vgPer    = parseInt(cfg.per_page, 10);
+if (!(vgPer > 0)) vgPer = 8;
+
+/* 心形只在服务端可用时输出真按钮，否则显示静态 0，避免点了报错 */
+var vgZan    = vt_get_config('zan', {}) || {};
+var vgLike   = cfg.like !== false && vgZan.enable && vgZan.server;
+
+/* date 允许 2024/07/11、2024-07-11、带时间三种写法；统一成可排序的 ISO */
+function vgDate(v) {
+    if (!v) return { iso: '', text: '' };
+    var s = String(v).trim();
+    var m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+    if (!m) return { iso: '', text: s };
+    var iso = m[1] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2);
+    return { iso: iso, text: iso };
+}
+
+/* 点赞 key：日期 + 标题压成路径片段，稳定且不会带 ? # 这类会被 zan 截断的字符 */
+function vgKey(it, i) {
+    var raw = String(it.id || ((it.date || '') + '-' + (it.title || '')));
+    var s = raw.toLowerCase()
+        .replace(/[\s\/\\?#]+/g, '-')
+        .replace(/[^\w\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef-]/g, '')
+        .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    return '/vignette/' + (s || ('item-' + (i + 1)));
+}
+
+/* 正文压成一行，给图片 hover 时浮出的说明用 */
+function vgPlain(it) {
+    var t = String(it.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    return t.length > 56 ? t.slice(0, 56) + '…' : t;
+}
+%><%- partial('_partial/header') %>
+
+<% if (!vgOn) { %>
+
+<div class="main-container page-vignette">
+    <div class="main-widget">
+        <div class="page-off">
+            <i class="fas fa-circle-info"></i>
+            <span>即刻短文已关闭，打开主题 <code>_config.yml</code> 里的 <code>vignette.enable</code> 即可恢复。</span>
+        </div>
+    </div>
+</div>
+
+<% } else { %>
+
+<div class="main-container page-vignette">
+    <div class="main-widget">
+
+        <%# ---------- 页头：小字 + 标题 + 总条数 ---------- %>
+        <div class="vg-head">
+            <div class="vg-head-main">
+                <p class="vg-tips"><%= vgTips %></p>
+                <h1 class="vg-title"><%= vgTitle %></h1>
+            </div>
+            <% if (list.length) { %>
+            <span class="vg-total">共 <%= list.length %> 条</span>
+            <% } %>
+        </div>
+
+        <% if (!list.length) { %>
+        <div class="essay-empty">
+            <p>还没有即刻短文。</p>
+            <p class="essay-empty-tip">在 <code>source/_data/vignette.yml</code> 里按格式加一条，这里就会出现。</p>
+        </div>
+        <% } else { %>
+
+        <ul class="essay-list" id="essay-list">
+            <% list.forEach(function (it, i) {
+                 it = it || {};
+                 var d      = vgDate(it.date);
+                 var author = it.author || {};
+                 var name   = author.name || config.author || '';
+                 var avatar = author.avatar || vgAvatar;
+                 var imgs   = (it.images || []).filter(Boolean);
+                 var cap    = vgPlain(it);
+                 var hidden = i >= vgPer;
+
+                 /* 一屏 2 张：4 张 = 2 屏，3 张 = 2 屏（末屏单张留左格），
+                    2 张 = 1 屏不出按钮，1 张 = 单图撑满整行 */
+                 var perScreen = 2;
+                 var screens   = Math.ceil(imgs.length / perScreen);
+                 var gcls      = 'essay-gallery';
+                 if (screens > 1) gcls += ' essay-gallery--multi';
+                 if (imgs.length === 1) gcls += ' essay-gallery--single';
+            %>
+            <li class="essay-item<%= hidden ? ' is-hidden' : '' %>" data-index="<%= i %>">
+
+                <%# ---------- 作者 ---------- %>
+                <div class="essay-head">
+                    <img class="essay-avatar" src="<%- url_for(avatar) %>" alt="<%= name %>"
+                         loading="lazy" width="40" height="40"
+                         onerror="this.onerror=null;this.src='<%- url_for(vgAvatar) %>'">
+                    <div class="essay-byline">
+                        <% if (author.link) { %>
+                        <a class="essay-author" href="<%- url_for(author.link) %>"><%= name %></a>
+                        <% } else { %>
+                        <span class="essay-author"><%= name %></span>
+                        <% } %>
+                        <time class="essay-date" datetime="<%= d.iso %>"><%= d.text %></time>
+                    </div>
+                </div>
+
+                <% if (it.title) { %>
+                <h2 class="essay-title"><%= it.title %></h2>
+                <% } %>
+
+                <% if (it.content) { %>
+                <div class="essay-text"><%- it.content %></div>
+                <% } %>
+
+                <%# ---------- 图集：一屏 2 张，多屏出左右按钮 + 圆点 ---------- %>
+                <% if (imgs.length) { %>
+                <div class="<%= gcls %>" data-screens="<%= screens %>">
+                    <div class="essay-gallery-viewport">
+                        <div class="essay-gallery-track">
+                            <% for (var sc = 0; sc < screens; sc++) { %>
+                            <div class="essay-gallery-page">
+                                <% imgs.slice(sc * perScreen, sc * perScreen + perScreen).forEach(function (src) { %>
+                                <a class="essay-img" href="<%- url_for(src) %>" target="_blank" rel="noopener">
+                                    <img src="<%- url_for(src) %>" alt="" loading="lazy">
+                                    <% if (cap) { %><span class="essay-img-cap"><%= cap %></span><% } %>
+                                </a>
+                                <% }); %>
+                            </div>
+                            <% } %>
+                        </div>
+                    </div>
+
+                    <% if (screens > 1) { %>
+                    <button class="essay-gallery-nav essay-gallery-nav--prev" type="button" aria-label="上一张">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="essay-gallery-nav essay-gallery-nav--next" type="button" aria-label="下一张">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <div class="essay-gallery-dots" aria-hidden="true">
+                        <% for (var dc = 0; dc < screens; dc++) { %><i<%= dc === 0 ? ' class="is-active"' : '' %>></i><% } %>
+                    </div>
+                    <% } %>
+                </div>
+                <% } %>
+
+                <hr class="essay-hr">
+
+                <%# ---------- 底部：时间 / 图片数 / 点赞 ---------- %>
+                <div class="essay-bottom">
+                    <div class="essay-info">
+                        <span class="essay-pill">
+                            <i class="fas fa-clock"></i>
+                            <time class="essay-ago" datetime="<%= d.iso %>"><%= d.text %></time>
+                        </span>
+                        <% if (imgs.length) { %>
+                        <span class="essay-pill">
+                            <i class="fas fa-image"></i>
+                            <span><%= imgs.length %> 张图</span>
+                        </span>
+                        <% } %>
+                    </div>
+
+                    <% if (vgLike) { %>
+                    <span class="essay-like" data-zan data-zan-scope="content"
+                          data-zan-key="<%= vgKey(it, i) %>">
+                        <i class="fas fa-heart"></i>
+                        <span class="essay-like-count" data-zan-count>0</span>
+                    </span>
+                    <% } else { %>
+                    <span class="essay-like is-static" aria-hidden="true">
+                        <i class="fas fa-heart"></i><span class="essay-like-count">0</span>
+                    </span>
+                    <% } %>
+                </div>
+            </li>
+            <% }); %>
+        </ul>
+
+        <div class="essay-more-wrap" id="essay-more-wrap"<%= list.length > vgPer ? '' : ' hidden' %>>
+            <button type="button" class="essay-more-btn" id="essay-more" aria-label="加载更多">
+                <i class="fas fa-angles-down"></i>
+                <span class="essay-more-text">加载更多</span>
+            </button>
+        </div>
+
+        <% } %>
+    </div>
+
+    <div class="sider">
+        <%- partial('_partial/sidebar', {name: 'default-sidebar'}) %>
+
+        <%- vt_theme_ad('ad_sidebar') %>
+    </div>
+</div>
+
+<script>
+  window.VIGNETTE_CONFIG = {
+    perPage: <%= vgPer %>
+  };
+</script>
+<script src="<%- url_for('/js/vignette-page.js') %>?v=<%= config.asset_version || '1' %>" defer></script>
+
+<% } %>
+
+<% /* get_footer() */ %>
+<%- partial('_partial/footer') %>
