@@ -51,10 +51,10 @@ description: ""                     # 描述 Description（已废弃 → seo.des
 home_layout:
   enabled:
     - slider                        # Sliders 幻灯片
-    - guide                         # 精选导读（guide_box）
     - notices                       # Notices 通知公告
     - hot                           # Hot topics 热门文章
-    - last                          # Latest 最新文章
+    - guide                         # 精选导读（guide_box，置于最新文章/更新列表上方）
+    - last                          # Latest 最新文章（更新列表）
     - links                         # Links 友情链接
   disabled: []
 
